@@ -18,6 +18,20 @@ export class JwtGuard implements CanActivate {
     if (!hdr?.startsWith('Bearer ')) throw new UnauthorizedException('missing bearer');
 
     const token = hdr.slice(7);
+    
+    // DEBUG: логируем формат токена
+    const parts = token.split('.');
+    console.log('[JWT] Token format check:', {
+      length: token.length,
+      parts: parts.length,
+      prefix: token.substring(0, 20),
+    });
+    
+    if (parts.length !== 3) {
+      console.error('[JWT] Invalid token format - expected 3 parts (header.payload.signature), got:', parts.length);
+      throw new UnauthorizedException('invalid token format');
+    }
+    
     try {
       const { payload } = await jwtVerify(token, JWKS, {
         issuer: ISSUER,
