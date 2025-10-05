@@ -1,53 +1,41 @@
-import { Controller, Get, Put, Body, UseGuards, Post } from '@nestjs/common';
-import * as jwtGuard from '../auth/jwt.guard';
-import { ReqUser } from '../auth/user.decorator';
+// src/users/users.controller.ts
+import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtGuard } from '../auth/jwt.guard';
+import type { JwtUser } from '../auth/jwt.guard';
+import { ReqUser } from '../auth/user.decorator';
 
-@UseGuards(jwtGuard.JwtAuthGuard)
-@Controller('me')
+@Controller('/v1/me')
+@UseGuards(JwtGuard)
 export class UsersController {
-  constructor(private users: UsersService) { }
+  constructor(private readonly users: UsersService) { }
 
   @Get()
-  async me(@ReqUser() user: jwtGuard.JwtUser) {
-    const u = await this.users.ensureBySub({
-      sub: user.sub,
-      email: (user as any).email,
-      name: (user as any).name,
-      avatarUrl: (user as any).picture,
-    });
-    return u;
+  async me(@ReqUser() user: JwtUser) {
+    const me = await this.users.getMeBySub(user.sub);
+    return { ok: true, me };
   }
 
   @Get('peek')
-  async peek(@ReqUser() user: { sub: string; email?: string; name?: string; picture?: string }) {
-    const exists = await this.users.existsBySub(user.sub);
-    return {
-      exists,
-      profile: {
-        email: user.email ?? null,
-        name: user.name ?? null,
-        avatarUrl: user.picture ?? null,
-      },
-    };
+  async peek(@ReqUser() user: JwtUser) {
+    const me = await this.users.getMeBySub(user.sub);
+    return { exists: !!me, profile: { email: user.email ?? null, name: user.name ?? null, avatarUrl: null } };
   }
 
-  // Новое: bootstrap (создаёт по явной команде)
   @Post('bootstrap')
-  async bootstrap(
-    @ReqUser() user: { sub: string },
-    @Body() body: { name?: string; email?: string; avatarUrl?: string },
-  ) {
-    return this.users.bootstrap({
+  async bootstrap(@ReqUser() user: JwtUser) {
+    const me = await this.users.ensureBySub({
       sub: user.sub,
-      email: body.email ?? null,
-      name: body.name ?? null,
-      avatarUrl: body.avatarUrl ?? null,
+      email: user.email ?? null,
+      name: user.name ?? null,
+      avatarUrl: null,
     });
+    return { ok: true, me };
   }
 
   @Put()
-  async update(@ReqUser() user: jwtGuard.JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
-    return this.users.updateMe(user.sub, body);
+  async update(@ReqUser() user: JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
+    const me = await this.users.updateMe(user.sub, { name: body.name, avatar_url: body.avatar_url });
+    return { ok: true, me };
   }
 }

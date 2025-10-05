@@ -1,56 +1,53 @@
 // src/auth/jwt.guard.ts
-import {
-  CanActivate, ExecutionContext, Injectable, UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose';
 
-type JWKSFn = ReturnType<typeof createRemoteJWKSet>;
-export type JwtUser = JWTPayload & { sub: string; scope?: string };
+export type JwtUser = {
+  sub: string;
+  email?: string | null;
+  name?: string | null;
+};
+
+const ISSUER = process.env.OIDC_ISSUER ?? 'https://auth.lovig.in/api/oidc';
+const JWKS_URI = `${ISSUER}/.well-known/jwks.json`;
+const EXPECTED_AUD = process.env.OIDC_AUDIENCE || '';
+
+const JWKS = createRemoteJWKSet(new URL(JWKS_URI));
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  private issuer: string;
-  private audience: string;
-  private jwksUri: string;
-  private jwks: JWKSFn | null = null;
-
-  constructor(private readonly cfg: ConfigService) {
-    // читаем env уже после инициализации ConfigModule
-    this.issuer   = this.must('OIDC_ISSUER');
-    this.audience = this.must('OIDC_AUDIENCE', 'skillify-api'); // дефолт если хочешь
-    this.jwksUri  = this.must('OIDC_JWKS_URI');
-  }
-
-  private must(key: string, def?: string) {
-    const v = this.cfg.get<string>(key) ?? def;
-    if (!v) throw new Error(`Missing env ${key}`);
-    return v;
-  }
-
-  private getJWKS(): JWKSFn {
-    if (!this.jwks) {
-      this.jwks = createRemoteJWKSet(new URL(this.jwksUri));
-    }
-    return this.jwks!;
-  }
-
+export class JwtGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const req = ctx.switchToHttp().getRequest<any>();
+    const req = ctx.switchToHttp().getRequest();
     const auth = req.headers['authorization'] as string | undefined;
-    const m = auth?.match(/^Bearer\s+(.+)$/i);
-    if (!m) throw new UnauthorizedException('missing_bearer');
+    if (!auth?.startsWith('Bearer ')) throw new UnauthorizedException('missing bearer');
+
+    const token = auth.slice('Bearer '.length).trim();
 
     try {
-      const { payload } = await jwtVerify(m[1], this.getJWKS(), {
-        issuer: this.issuer,
-        audience: this.audience,
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: ISSUER,
+        // временно без жесткой проверки аудитории:
+        // audience: EXPECTED_AUD || undefined,
       });
-      if (!payload.sub) throw new UnauthorizedException('no_sub');
-      req.user = payload as JwtUser;
+
+      // мягкая проверка aud
+      if (EXPECTED_AUD) {
+        const aud = (payload.aud && (Array.isArray(payload.aud) ? payload.aud : [payload.aud])) || [];
+        if (!aud.includes(EXPECTED_AUD)) {
+          console.warn('[JWT] unexpected aud:', aud, 'expected:', EXPECTED_AUD);
+        }
+      }
+
+      (req as any).user = {
+        sub: payload.sub!,
+        email: (payload as JWTPayload & { email?: string }).email ?? null,
+        name: (payload as JWTPayload & { name?: string }).name ?? null,
+      } as JwtUser;
+
       return true;
-    } catch {
-      throw new UnauthorizedException('invalid_token');
+    } catch (e) {
+      console.error('[JWT] verify failed:', e);
+      throw new UnauthorizedException('invalid token');
     }
   }
 }
