@@ -5,6 +5,6 @@ import type { JwtUser } from './jwt.guard';
 export const ReqUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): JwtUser => {
     const req = ctx.switchToHttp().getRequest();
-    return (req as any).user as JwtUser;
+    return req.user as JwtUser;
   },
 );

@@ -1,9 +1,8 @@
 // src/users/users.controller.ts
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { JwtGuard } from '../auth/jwt.guard';
-import type { JwtUser } from '../auth/jwt.guard';
+import { Controller, Get, Post, Put, Body, UseGuards } from '@nestjs/common';
 import { ReqUser } from '../auth/user.decorator';
+import { JwtGuard, type JwtUser } from '../auth/jwt.guard';
+import { UsersService } from './users.service';
 
 @Controller('me')
 @UseGuards(JwtGuard)
@@ -12,30 +11,25 @@ export class UsersController {
 
   @Get()
   async me(@ReqUser() user: JwtUser) {
-    const me = await this.users.getMeBySub(user.sub);
-    return { ok: true, me };
+    return this.users.getMeBySub(user.sub);
   }
 
   @Get('peek')
   async peek(@ReqUser() user: JwtUser) {
-    const me = await this.users.getMeBySub(user.sub);
-    return { exists: !!me, profile: { email: user.email ?? null, name: user.name ?? null, avatarUrl: null } };
+    const profile = await this.users.getMeBySub(user.sub);
+    return { exists: !!profile, profile };
   }
 
   @Post('bootstrap')
   async bootstrap(@ReqUser() user: JwtUser) {
-    const me = await this.users.ensureBySub({
-      sub: user.sub,
-      email: user.email ?? null,
-      name: user.name ?? null,
-      avatarUrl: null,
+    const ensured = await this.users.ensureBySub({
+      sub: user.sub, email: user.email ?? null, name: user.name ?? null, avatarUrl: null,
     });
-    return { ok: true, me };
+    return ensured;
   }
 
   @Put()
   async update(@ReqUser() user: JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
-    const me = await this.users.updateMe(user.sub, { name: body.name, avatar_url: body.avatar_url });
-    return { ok: true, me };
+    return this.users.updateMe(user.sub, body);
   }
 }
