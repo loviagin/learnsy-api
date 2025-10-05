@@ -21,7 +21,6 @@ export class JwtGuard implements CanActivate {
     try {
       const { payload } = await jwtVerify(token, JWKS, {
         issuer: ISSUER,
-        audience: AUDIENCE,
         algorithms: ['ES256'],
       });
       // положим user в req
