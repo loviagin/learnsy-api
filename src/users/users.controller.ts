@@ -5,7 +5,7 @@ import { JwtGuard } from '../auth/jwt.guard';
 import type { JwtUser } from '../auth/jwt.guard';
 import { ReqUser } from '../auth/user.decorator';
 
-@Controller('/v1/me')
+@Controller('me')
 @UseGuards(JwtGuard)
 export class UsersController {
   constructor(private readonly users: UsersService) { }
