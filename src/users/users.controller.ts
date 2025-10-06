@@ -20,7 +20,21 @@ export class UsersController {
   @Get('peek')
   async peek(@ReqUser() user: JwtUser) {
     const profile = await this.users.getMeBySub(user.sub);
-    return { exists: !!profile, profile };
+    // Если профиль существует, возвращаем exists: true, profile: null
+    // Если не существует, возвращаем exists: false, profile: draft из OIDC
+    if (profile) {
+      return { exists: true, profile: null };
+    } else {
+      return { 
+        exists: false, 
+        profile: {
+          sub: user.sub,
+          email: user.email ?? null,
+          name: user.name ?? null,
+          avatarUrl: null
+        }
+      };
+    }
   }
 
   @Post('bootstrap')
