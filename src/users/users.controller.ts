@@ -1,5 +1,8 @@
 // src/users/users.controller.ts
-import { Controller, Get, Post, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { ReqUser } from '../auth/user.decorator';
 import { JwtGuard, type JwtUser } from '../auth/jwt.guard';
 import { UsersService } from './users.service';
@@ -21,9 +24,23 @@ export class UsersController {
   }
 
   @Post('bootstrap')
-  async bootstrap(@ReqUser() user: JwtUser) {
+  async bootstrap(
+    @ReqUser() user: JwtUser,
+    @Body() body: { 
+      name?: string; 
+      username?: string;
+      email?: string; 
+      avatarUrl?: string;
+      birthDate?: string;
+    }
+  ) {
     const ensured = await this.users.ensureBySub({
-      sub: user.sub, email: user.email ?? null, name: user.name ?? null, avatarUrl: null,
+      sub: user.sub, 
+      email: body.email ?? user.email ?? null, 
+      name: body.name ?? user.name ?? null,
+      username: body.username ?? null,
+      avatarUrl: body.avatarUrl ?? null,
+      birthDate: body.birthDate ?? null,
     });
     return ensured;
   }
@@ -31,5 +48,39 @@ export class UsersController {
   @Put()
   async update(@ReqUser() user: JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
     return this.users.updateMe(user.sub, body);
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('avatar', {
+    storage: diskStorage({
+      destination: './uploads/avatars',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        cb(null, `avatar-${uniqueSuffix}${ext}`);
+      },
+    }),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB
+    },
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+        return cb(new BadRequestException('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadAvatar(
+    @ReqUser() user: JwtUser,
+    @UploadedFile() file: any
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    
+    // Формируем URL для доступа к файлу
+    const avatarUrl = `/uploads/avatars/${file.filename}`;
+    
+    return { url: avatarUrl };
   }
 }

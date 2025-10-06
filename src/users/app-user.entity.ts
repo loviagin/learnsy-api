@@ -13,6 +13,12 @@ export class AppUser {
     @Column({ type: 'text', nullable: true })
     name?: string;
 
+    @Column({ type: 'text', nullable: true, unique: true })
+    username?: string;
+
+    @Column({ type: 'date', nullable: true })
+    birth_date?: Date;
+
     @Column({ type: 'text', nullable: true })
     avatar_url?: string;
 

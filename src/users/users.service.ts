@@ -12,23 +12,29 @@ export class UsersService {
         sub: string;
         email?: string | null;
         name?: string | null;
+        username?: string | null;
         avatarUrl?: string | null;
+        birthDate?: string | null;
     }): Promise<AppUser> {
-        const { sub, email, name, avatarUrl } = params;
+        const { sub, email, name, username, avatarUrl, birthDate } = params;
         const existing = await this.repo.findOne({ where: { auth_user_id: sub } });
         if (existing) {
             existing.last_login_at = new Date();
             if (existing.name == null && name) existing.name = name;
             if (existing.email_snapshot == null && email) existing.email_snapshot = email;
+            if (existing.username == null && username) existing.username = username;
             if (existing.avatar_url == null && avatarUrl) existing.avatar_url = avatarUrl;
+            if (existing.birth_date == null && birthDate) existing.birth_date = new Date(birthDate);
             existing.updated_at = new Date();
             return this.repo.save(existing);
         }
         const created = this.repo.create({
             auth_user_id: sub,
             name: name ?? null,
+            username: username ?? null,
             email_snapshot: email ?? null,
             avatar_url: avatarUrl ?? null,
+            birth_date: birthDate ? new Date(birthDate) : null,
             last_login_at: new Date(),
         } as DeepPartial<AppUser>);
 
