@@ -2,11 +2,9 @@
 import {
   CanActivate, ExecutionContext, Injectable, UnauthorizedException,
 } from '@nestjs/common';
-import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 const ISSUER = 'https://auth.lovig.in/api/oidc';
-const AUDIENCE = 'https://la.nqstx.online';
-const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks.json`));
+const USERINFO_URL = `${ISSUER}/me`;
 
 export type JwtUser = { sub: string; email?: string; name?: string };
 
@@ -19,34 +17,31 @@ export class JwtGuard implements CanActivate {
 
     const token = hdr.slice(7);
     
-    // DEBUG: логируем формат токена
-    const parts = token.split('.');
-    console.log('[JWT] Token format check:', {
-      length: token.length,
-      parts: parts.length,
-      prefix: token.substring(0, 20),
-    });
-    
-    if (parts.length !== 3) {
-      console.error('[JWT] Invalid token format - expected 3 parts (header.payload.signature), got:', parts.length);
-      throw new UnauthorizedException('invalid token format');
-    }
-    
+    // Используем userinfo endpoint для валидации opaque токенов
     try {
-      const { payload } = await jwtVerify(token, JWKS, {
-        issuer: ISSUER,
-        audience: AUDIENCE,
-        algorithms: ['ES256'],
+      const response = await fetch(USERINFO_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      // положим user в req
+      
+      if (!response.ok) {
+        console.error('[Auth] UserInfo failed:', response.status, response.statusText);
+        throw new UnauthorizedException('invalid token');
+      }
+      
+      const userInfo = await response.json() as { sub: string; email?: string; name?: string };
+      
+      // Положим user в req
       (req as any).user = {
-        sub: String(payload.sub),
-        email: payload.email as string | undefined,
-        name: payload.name as string | undefined,
+        sub: userInfo.sub,
+        email: userInfo.email,
+        name: userInfo.name,
       } satisfies JwtUser;
+      
       return true;
     } catch (e) {
-      console.error('[JWT] verify failed:', e);
+      console.error('[Auth] validation failed:', e);
       throw new UnauthorizedException('invalid token');
     }
   }
