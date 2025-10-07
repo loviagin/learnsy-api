@@ -273,6 +273,7 @@ export class UsersService {
             { id: 'salsa', name: 'Salsa', category: 'Dance', icon_name: 'figure.dance' },
             { id: 'hiphop', name: 'Hip-Hop', category: 'Dance', icon_name: 'figure.dance' },
             { id: 'contemporary', name: 'Contemporary', category: 'Dance', icon_name: 'figure.dance' },
+            { id: 'dancing', name: 'Dancing', category: 'Dance', icon_name: 'figure.dance' },
             
             // Crafts & Handmade
             { id: 'sewing', name: 'Sewing', category: 'Crafts', icon_name: 'scissors' },
