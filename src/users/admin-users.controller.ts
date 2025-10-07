@@ -22,6 +22,7 @@ export class AdminUsersController {
     username?: string;
     email?: string;
     avatarUrl?: string;
+    bio?: string;
     birthDate?: string;
     ownedSkills?: Array<{ skillId: string; level: string }>;
     desiredSkills?: Array<{ skillId: string }>;

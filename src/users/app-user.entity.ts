@@ -23,6 +23,9 @@ export class AppUser {
     @Column({ type: 'text', nullable: true })
     avatar_url?: string;
 
+    @Column({ type: 'text', nullable: true })
+    bio?: string;
+
     @Column({ type: 'text', array: true, default: () => "'{}'" })
     roles: string[];
 

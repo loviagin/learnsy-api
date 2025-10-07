@@ -20,11 +20,12 @@ export class UsersService {
         name?: string | null;
         username?: string | null;
         avatarUrl?: string | null;
+        bio?: string | null;
         birthDate?: string | null;
         ownedSkills?: Array<{ skillId: string; level: string }>;
         desiredSkills?: Array<{ skillId: string }>;
     }): Promise<AppUser> {
-        const { sub, email, name, username, avatarUrl, birthDate, ownedSkills, desiredSkills } = params;
+        const { sub, email, name, username, avatarUrl, bio, birthDate, ownedSkills, desiredSkills } = params;
         const existing = await this.repo.findOne({ where: { auth_user_id: sub } });
         if (existing) {
             existing.last_login_at = new Date();
@@ -32,6 +33,7 @@ export class UsersService {
             if (existing.email_snapshot == null && email) existing.email_snapshot = email;
             if (existing.username == null && username) existing.username = username;
             if (existing.avatar_url == null && avatarUrl) existing.avatar_url = avatarUrl;
+            if (existing.bio == null && bio) existing.bio = bio;
             if (existing.birth_date == null && birthDate) existing.birth_date = new Date(birthDate);
             existing.updated_at = new Date();
             
@@ -48,6 +50,7 @@ export class UsersService {
             username: username ?? null,
             email_snapshot: email ?? null,
             avatar_url: avatarUrl ?? null,
+            bio: bio ?? null,
             birth_date: birthDate ? new Date(birthDate) : null,
             last_login_at: new Date(),
         } as DeepPartial<AppUser>);
@@ -355,11 +358,12 @@ export class UsersService {
         username?: string;
         email?: string;
         avatarUrl?: string;
+        bio?: string;
         birthDate?: string;
         ownedSkills?: Array<{ skillId: string; level: string }>;
         desiredSkills?: Array<{ skillId: string }>;
     }): Promise<AppUser> {
-        const { name, username, email, avatarUrl, birthDate, ownedSkills, desiredSkills } = params;
+        const { name, username, email, avatarUrl, bio, birthDate, ownedSkills, desiredSkills } = params;
 
         // Проверяем уникальность username если он передан
         if (username) {
@@ -375,6 +379,7 @@ export class UsersService {
             username: username || null,
             email_snapshot: email || null,
             avatar_url: avatarUrl || null,
+            bio: bio || null,
             birth_date: birthDate ? new Date(birthDate) : null,
         } as DeepPartial<AppUser>);
 

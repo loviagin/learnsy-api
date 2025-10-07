@@ -45,6 +45,7 @@ export class UsersController {
       username?: string;
       email?: string; 
       avatarUrl?: string;
+      bio?: string;
       birthDate?: string;
       ownedSkills?: Array<{ skillId: string; level: string }>;
       desiredSkills?: Array<{ skillId: string }>;
@@ -56,6 +57,7 @@ export class UsersController {
       name: body.name ?? user.name ?? null,
       username: body.username ?? null,
       avatarUrl: body.avatarUrl ?? null,
+      bio: body.bio ?? null,
       birthDate: body.birthDate ?? null,
       ownedSkills: body.ownedSkills,
       desiredSkills: body.desiredSkills,
