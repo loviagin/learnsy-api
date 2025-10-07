@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { UserSkill } from './user-skill.entity';
 
 @Entity({ name: 'app_users' })
 export class AppUser {
@@ -24,6 +25,9 @@ export class AppUser {
 
     @Column({ type: 'text', array: true, default: () => "'{}'" })
     roles: string[];
+
+    @OneToMany(() => UserSkill, userSkill => userSkill.user)
+    skills: UserSkill[];
 
     @Column({ type: 'timestamptz', nullable: true })
     last_login_at?: Date;

@@ -46,6 +46,8 @@ export class UsersController {
       email?: string; 
       avatarUrl?: string;
       birthDate?: string;
+      ownedSkills?: Array<{ skillId: string; level: string }>;
+      desiredSkills?: Array<{ skillId: string }>;
     }
   ) {
     const ensured = await this.users.ensureBySub({
@@ -55,6 +57,8 @@ export class UsersController {
       username: body.username ?? null,
       avatarUrl: body.avatarUrl ?? null,
       birthDate: body.birthDate ?? null,
+      ownedSkills: body.ownedSkills,
+      desiredSkills: body.desiredSkills,
     });
     return ensured;
   }
