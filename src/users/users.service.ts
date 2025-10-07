@@ -361,10 +361,11 @@ export class UsersService {
         avatarUrl?: string;
         bio?: string;
         birthDate?: string;
+        authUserId?: string;
         ownedSkills?: Array<{ skillId: string; level: string }>;
         desiredSkills?: Array<{ skillId: string }>;
     }): Promise<AppUser> {
-        const { name, username, email, avatarUrl, bio, birthDate, ownedSkills, desiredSkills } = params;
+        const { name, username, email, avatarUrl, bio, birthDate, authUserId, ownedSkills, desiredSkills } = params;
 
         // Проверяем уникальность username если он передан
         if (username) {
@@ -376,6 +377,7 @@ export class UsersService {
 
         // Создаем пользователя
         const user = this.repo.create({
+            auth_user_id: authUserId || 'admin-created',
             name: name || null,
             username: username || null,
             email_snapshot: email || null,

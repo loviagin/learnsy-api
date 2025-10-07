@@ -24,6 +24,7 @@ export class AdminUsersController {
     avatarUrl?: string;
     bio?: string;
     birthDate?: string;
+    authUserId?: string;
     ownedSkills?: Array<{ skillId: string; level: string }>;
     desiredSkills?: Array<{ skillId: string }>;
   }) {
