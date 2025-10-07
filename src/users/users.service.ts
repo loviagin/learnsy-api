@@ -114,6 +114,12 @@ export class UsersService {
         return cnt > 0;
     }
 
+    async isUsernameAvailable(username: string): Promise<boolean> {
+        if (!username) return false;
+        const exists = await this.repo.exist({ where: { username } });
+        return !exists;
+    }
+
     async bootstrap(params: {
         sub: string;
         email?: string | null;

@@ -1,5 +1,5 @@
 // src/users/users.controller.ts
-import { Controller, Get, Post, Put, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -100,5 +100,14 @@ export class UsersController {
     const avatarUrl = `/uploads/avatars/${file.filename}`;
     
     return { url: avatarUrl };
+  }
+
+  @Get('username-available')
+  async usernameAvailable(@Query('username') username: string) {
+    if (!username || username.length < 3) {
+      return { available: false, reason: 'too_short' };
+    }
+    const available = await this.users.isUsernameAvailable(username);
+    return { available };
   }
 }
