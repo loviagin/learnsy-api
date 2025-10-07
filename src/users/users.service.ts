@@ -339,4 +339,67 @@ export class UsersService {
             { id: 'babysitting', name: 'Babysitting', category: 'Other', icon_name: 'figure.2.and.child.holdinghands' },
         ];
     }
+
+    async getAllUsers(): Promise<AppUser[]> {
+        return this.repo.find({
+            order: { created_at: 'DESC' }
+        });
+    }
+
+    async getUsersCount(): Promise<number> {
+        return this.repo.count();
+    }
+
+    async createUser(params: {
+        name?: string;
+        username?: string;
+        email?: string;
+        avatarUrl?: string;
+        birthDate?: string;
+        ownedSkills?: Array<{ skillId: string; level: string }>;
+        desiredSkills?: Array<{ skillId: string }>;
+    }): Promise<AppUser> {
+        const { name, username, email, avatarUrl, birthDate, ownedSkills, desiredSkills } = params;
+
+        // Проверяем уникальность username если он передан
+        if (username) {
+            const existing = await this.repo.findOne({ where: { username } });
+            if (existing) {
+                throw new Error('Username already exists');
+            }
+        }
+
+        // Создаем пользователя
+        const user = this.repo.create({
+            name: name || null,
+            username: username || null,
+            email_snapshot: email || null,
+            avatar_url: avatarUrl || null,
+            birth_date: birthDate ? new Date(birthDate) : null,
+        } as DeepPartial<AppUser>);
+
+        const savedUser = await this.repo.save(user);
+
+        // Добавляем навыки если они переданы
+        if (ownedSkills || desiredSkills) {
+            await this.updateUserSkills(savedUser.id, ownedSkills, desiredSkills);
+        }
+
+        return savedUser;
+    }
+
+    async deleteUser(id: string): Promise<AppUser> {
+        const user = await this.repo.findOne({ where: { id } });
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Удаляем связанные навыки
+        await this.userSkillRepo.delete({ user_id: id });
+
+        // Удаляем пользователя
+        await this.repo.remove(user);
+        
+        return user;
+    }
 }
