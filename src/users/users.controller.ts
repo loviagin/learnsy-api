@@ -65,6 +65,17 @@ export class UsersController {
     return ensured;
   }
 
+  @Put('skills')
+  async updateSkills(
+    @ReqUser() user: JwtUser,
+    @Body() body: { 
+      ownedSkills?: Array<{ skillId: string; level: string }>;
+      desiredSkills?: Array<{ skillId: string }>;
+    }
+  ) {
+    return this.users.updateUserSkills(user.sub, body.ownedSkills, body.desiredSkills);
+  }
+
   @Put()
   async update(@ReqUser() user: JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
     return this.users.updateMe(user.sub, body);

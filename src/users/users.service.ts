@@ -39,7 +39,7 @@ export class UsersService {
             
             // Обновляем навыки, если они переданы
             if (ownedSkills || desiredSkills) {
-                await this.updateUserSkills(existing.id, ownedSkills, desiredSkills);
+                await this.updateUserSkillsInternal(existing.id, ownedSkills, desiredSkills);
             }
             
             return this.repo.save(existing);
@@ -59,7 +59,7 @@ export class UsersService {
         
         // Добавляем навыки для нового пользователя
         if (ownedSkills || desiredSkills) {
-            await this.updateUserSkills(saved.id, ownedSkills, desiredSkills);
+            await this.updateUserSkillsInternal(saved.id, ownedSkills, desiredSkills);
         }
         
         return saved;
@@ -143,7 +143,7 @@ export class UsersService {
         return this.repo.save(created);
     }
 
-    private async updateUserSkills(
+    private async updateUserSkillsInternal(
         userId: string,
         ownedSkills?: Array<{ skillId: string; level: string }>,
         desiredSkills?: Array<{ skillId: string }>,
@@ -390,7 +390,7 @@ export class UsersService {
 
         // Добавляем навыки если они переданы
         if (ownedSkills || desiredSkills) {
-            await this.updateUserSkills(savedUser.id, ownedSkills, desiredSkills);
+            await this.updateUserSkillsInternal(savedUser.id, ownedSkills, desiredSkills);
         }
 
         return savedUser;
@@ -409,5 +409,26 @@ export class UsersService {
         await this.repo.remove(user);
         
         return user;
+    }
+    
+    async updateUserSkills(
+        authUserId: string,
+        ownedSkills?: Array<{ skillId: string; level: string }>,
+        desiredSkills?: Array<{ skillId: string }>
+    ): Promise<AppUser> {
+        const user = await this.repo.findOne({ where: { auth_user_id: authUserId } });
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Обновляем навыки пользователя
+        await this.updateUserSkillsInternal(user.id, ownedSkills, desiredSkills);
+        
+        // Возвращаем обновленного пользователя
+        const updatedUser = await this.getMeBySub(authUserId);
+        if (!updatedUser) {
+            throw new Error('Failed to fetch updated user');
+        }
+        return updatedUser;
     }
 }
