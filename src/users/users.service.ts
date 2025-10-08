@@ -148,38 +148,41 @@ export class UsersService {
         ownedSkills?: Array<{ skillId: string; level: string }>,
         desiredSkills?: Array<{ skillId: string }>,
     ): Promise<void> {
-        // Удаляем старые навыки пользователя
-        await this.userSkillRepo.delete({ user_id: userId });
+        // Если переданы ownedSkills (даже пустой массив) — очищаем именно owned и при наличии добавляем новые
+        if (ownedSkills !== undefined) {
+            await this.userSkillRepo.delete({ user_id: userId, type: SkillType.OWNED });
+            if (ownedSkills.length > 0) {
+                // Сначала убедимся, что навыки существуют в базе
+                await this.ensureSkillsExist(ownedSkills.map(s => s.skillId));
 
-        // Добавляем owned skills
-        if (ownedSkills && ownedSkills.length > 0) {
-            // Сначала убедимся, что навыки существуют в базе
-            await this.ensureSkillsExist(ownedSkills.map(s => s.skillId));
-            
-            const userSkills = ownedSkills.map(({ skillId, level }) =>
-                this.userSkillRepo.create({
-                    user_id: userId,
-                    skill_id: skillId,
-                    type: SkillType.OWNED,
-                    level,
-                })
-            );
-            await this.userSkillRepo.save(userSkills);
+                const userSkills = ownedSkills.map(({ skillId, level }) =>
+                    this.userSkillRepo.create({
+                        user_id: userId,
+                        skill_id: skillId,
+                        type: SkillType.OWNED,
+                        level,
+                    })
+                );
+                await this.userSkillRepo.save(userSkills);
+            }
         }
 
-        // Добавляем desired skills
-        if (desiredSkills && desiredSkills.length > 0) {
-            // Убедимся, что навыки существуют в базе
-            await this.ensureSkillsExist(desiredSkills.map(s => s.skillId));
-            
-            const userSkills = desiredSkills.map(({ skillId }) =>
-                this.userSkillRepo.create({
-                    user_id: userId,
-                    skill_id: skillId,
-                    type: SkillType.DESIRED,
-                })
-            );
-            await this.userSkillRepo.save(userSkills);
+        // Если переданы desiredSkills (даже пустой массив) — очищаем именно desired и при наличии добавляем новые
+        if (desiredSkills !== undefined) {
+            await this.userSkillRepo.delete({ user_id: userId, type: SkillType.DESIRED });
+            if (desiredSkills.length > 0) {
+                // Убедимся, что навыки существуют в базе
+                await this.ensureSkillsExist(desiredSkills.map(s => s.skillId));
+
+                const userSkills = desiredSkills.map(({ skillId }) =>
+                    this.userSkillRepo.create({
+                        user_id: userId,
+                        skill_id: skillId,
+                        type: SkillType.DESIRED,
+                    })
+                );
+                await this.userSkillRepo.save(userSkills);
+            }
         }
     }
 
