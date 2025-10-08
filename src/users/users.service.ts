@@ -353,6 +353,74 @@ export class UsersService {
         });
     }
 
+    async getTopUsers(params: {
+        ownedSkillIds?: string[];
+        desiredSkillIds?: string[];
+        limit?: number;
+    }): Promise<any[]> {
+        const { ownedSkillIds, desiredSkillIds, limit = 20 } = params;
+
+        // Базовый запрос с подгрузкой навыков
+        const qb = this.repo
+            .createQueryBuilder('u')
+            .leftJoinAndSelect('u.skills', 'us')
+            .leftJoinAndSelect('us.skill', 's')
+            .orderBy('u.created_at', 'DESC')
+            .limit(limit);
+
+        // Фильтрация по owned навыкам
+        if (ownedSkillIds && ownedSkillIds.length > 0) {
+            qb.andWhere(
+                '(us.type = :ownedType AND s.id IN (:...ownedIds))',
+                { ownedType: SkillType.OWNED, ownedIds: ownedSkillIds }
+            );
+        }
+
+        // Фильтрация по desired навыкам
+        if (desiredSkillIds && desiredSkillIds.length > 0) {
+            qb.andWhere(
+                '(us.type = :desiredType AND s.id IN (:...desiredIds))',
+                { desiredType: SkillType.DESIRED, desiredIds: desiredSkillIds }
+            );
+        }
+
+        const users = await qb.getMany();
+
+        return users.map(user => {
+            const ownedSkills = (user.skills ?? [])
+                .filter(us => us.type === SkillType.OWNED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: us.level,
+                }));
+
+            const desiredSkills = (user.skills ?? [])
+                .filter(us => us.type === SkillType.DESIRED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: null,
+                }));
+
+            // Возвращаем объект совместимый с AppUser JSON в клиенте
+            const { skills, ...rest } = user as any;
+            return {
+                ...rest,
+                owned_skills: ownedSkills,
+                desired_skills: desiredSkills,
+            };
+        });
+    }
+
     async getUsersCount(): Promise<number> {
         return this.repo.count();
     }
