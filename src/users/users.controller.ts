@@ -7,17 +7,17 @@ import { ReqUser } from '../auth/user.decorator';
 import { JwtGuard, type JwtUser } from '../auth/jwt.guard';
 import { UsersService } from './users.service';
 
-@Controller('me')
+@Controller()
 @UseGuards(JwtGuard)
 export class UsersController {
   constructor(private readonly users: UsersService) { }
 
-  @Get()
+  @Get('me')
   async me(@ReqUser() user: JwtUser) {
     return this.users.getMeBySub(user.sub);
   }
 
-  @Get('peek')
+  @Get('me/peek')
   async peek(@ReqUser() user: JwtUser) {
     const profile = await this.users.getMeBySub(user.sub);
     // Если профиль существует, возвращаем exists: true, profile: null
@@ -37,7 +37,7 @@ export class UsersController {
     }
   }
 
-  @Post('bootstrap')
+  @Post('me/bootstrap')
   async bootstrap(
     @ReqUser() user: JwtUser,
     @Body() body: { 
@@ -65,7 +65,7 @@ export class UsersController {
     return ensured;
   }
 
-  @Put('skills')
+  @Put('me/skills')
   async updateSkills(
     @ReqUser() user: JwtUser,
     @Body() body: { 
@@ -76,12 +76,12 @@ export class UsersController {
     return this.users.updateUserSkills(user.sub, body.ownedSkills, body.desiredSkills);
   }
 
-  @Put()
+  @Put('me')
   async update(@ReqUser() user: JwtUser, @Body() body: { name?: string; avatar_url?: string }) {
     return this.users.updateMe(user.sub, body);
   }
 
-  @Post('avatar')
+  @Post('me/avatar')
   @UseInterceptors(FileInterceptor('avatar', {
     storage: diskStorage({
       destination: './uploads/avatars',
@@ -115,7 +115,7 @@ export class UsersController {
     return { url: avatarUrl };
   }
 
-  @Get('username-available')
+  @Get('me/username-available')
   async usernameAvailable(@Query('username') username: string) {
     if (!username || username.length < 3) {
       return { available: false, reason: 'too_short' };
@@ -124,24 +124,10 @@ export class UsersController {
     return { available };
   }
 
-  // Featured users with optional skill filters
-  @Get('featured')
-  async featured(
-    @ReqUser() user: JwtUser,
-    @Query('owned') ownedCsv?: string,
-    @Query('desired') desiredCsv?: string,
-    @Query('limit') limitStr?: string,
-  ) {
-    const owned = ownedCsv ? ownedCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const desired = desiredCsv ? desiredCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const limParsed = parseInt(limitStr ?? '', 10);
-    const limit = Number.isFinite(limParsed) && limParsed > 0 ? Math.min(limParsed, 200) : undefined;
-
-    return this.users.findFeaturedUsers({
-      ownedSkillIds: owned,
-      desiredSkillIds: desired,
-      limit,
-    });
+  // List all users for the main screen
+  @Get('users')
+  async listUsers() {
+    return this.users.getAllUsers();
   }
 
 }

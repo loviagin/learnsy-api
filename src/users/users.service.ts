@@ -223,7 +223,7 @@ export class UsersService {
             // Business
             { id: 'marketing', name: 'Marketing', category: 'Business', icon_name: 'megaphone.fill' },
             { id: 'sales', name: 'Sales', category: 'Business', icon_name: 'chart.line.uptrend.xyaxis' },
-            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.2.fill' },
+            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.3.fill' },
             { id: 'accounting', name: 'Accounting', category: 'Business', icon_name: 'dollarsign.circle.fill' },
             { id: 'leadership', name: 'Leadership', category: 'Business', icon_name: 'star.fill' },
             { id: 'negotiation', name: 'Negotiation', category: 'Business', icon_name: 'handshake.fill' },
@@ -335,7 +335,7 @@ export class UsersService {
             // Social & Volunteer
             { id: 'volunteering', name: 'Volunteering', category: 'Social', icon_name: 'heart.fill' },
             { id: 'counseling', name: 'Counseling', category: 'Social', icon_name: 'bubble.left.and.bubble.right.fill' },
-            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.2.fill' },
+            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.3.fill' },
             
             // Other
             { id: 'driving', name: 'Driving', category: 'Other', icon_name: 'car.fill' },
@@ -433,63 +433,5 @@ export class UsersService {
             throw new Error('Failed to fetch updated user');
         }
         return updatedUser;
-    }
-
-    async findFeaturedUsers(params: {
-        excludeSub?: string;
-        ownedSkillIds?: string[];
-        desiredSkillIds?: string[];
-        limit?: number;
-    }): Promise<any[]> {
-        const { ownedSkillIds, desiredSkillIds, limit } = params;
-
-        // Загружаем всех пользователей с навыками и фильтруем по необходимости
-        const users = await this.repo.find({
-            relations: ['skills', 'skills.skill'],
-            order: { last_login_at: 'DESC', created_at: 'DESC' },
-        });
-
-        let filtered = users.filter(u => {
-            const ownedOk = !ownedSkillIds || ownedSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.OWNED && ownedSkillIds.includes(us.skill_id));
-            const desiredOk = !desiredSkillIds || desiredSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.DESIRED && desiredSkillIds.includes(us.skill_id));
-            return ownedOk && desiredOk;
-        });
-
-        if (typeof limit === 'number' && limit > 0) {
-            filtered = filtered.slice(0, limit);
-        }
-
-        // Преобразуем под мобильный клиент (как getMeBySub)
-        return filtered.map(user => {
-            const ownedSkills = user.skills
-                ?.filter(us => us.type === SkillType.OWNED)
-                .map(us => ({
-                    skill: {
-                        id: us.skill.id,
-                        name: us.skill.name,
-                        category: us.skill.category,
-                        icon_name: us.skill.icon_name,
-                    },
-                    level: us.level,
-                })) || [];
-
-            const desiredSkills = user.skills
-                ?.filter(us => us.type === SkillType.DESIRED)
-                .map(us => ({
-                    skill: {
-                        id: us.skill.id,
-                        name: us.skill.name,
-                        category: us.skill.category,
-                        icon_name: us.skill.icon_name,
-                    },
-                    level: null,
-                })) || [];
-
-            return {
-                ...user,
-                owned_skills: ownedSkills,
-                desired_skills: desiredSkills,
-            };
-        });
     }
 }
