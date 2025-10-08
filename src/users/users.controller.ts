@@ -134,10 +134,10 @@ export class UsersController {
   ) {
     const owned = ownedCsv ? ownedCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
     const desired = desiredCsv ? desiredCsv.split(',').map(s => s.trim()).filter(Boolean) : [];
-    const limit = Math.min(Math.max(parseInt(limitStr ?? '20', 10) || 20, 1), 50);
+    const limParsed = parseInt(limitStr ?? '', 10);
+    const limit = Number.isFinite(limParsed) && limParsed > 0 ? Math.min(limParsed, 200) : undefined;
 
     return this.users.findFeaturedUsers({
-      excludeSub: user.sub,
       ownedSkillIds: owned,
       desiredSkillIds: desired,
       limit,

@@ -223,7 +223,7 @@ export class UsersService {
             // Business
             { id: 'marketing', name: 'Marketing', category: 'Business', icon_name: 'megaphone.fill' },
             { id: 'sales', name: 'Sales', category: 'Business', icon_name: 'chart.line.uptrend.xyaxis' },
-            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.3.fill' },
+            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.2.fill' },
             { id: 'accounting', name: 'Accounting', category: 'Business', icon_name: 'dollarsign.circle.fill' },
             { id: 'leadership', name: 'Leadership', category: 'Business', icon_name: 'star.fill' },
             { id: 'negotiation', name: 'Negotiation', category: 'Business', icon_name: 'handshake.fill' },
@@ -335,7 +335,7 @@ export class UsersService {
             // Social & Volunteer
             { id: 'volunteering', name: 'Volunteering', category: 'Social', icon_name: 'heart.fill' },
             { id: 'counseling', name: 'Counseling', category: 'Social', icon_name: 'bubble.left.and.bubble.right.fill' },
-            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.3.fill' },
+            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.2.fill' },
             
             // Other
             { id: 'driving', name: 'Driving', category: 'Other', icon_name: 'car.fill' },
@@ -436,30 +436,28 @@ export class UsersService {
     }
 
     async findFeaturedUsers(params: {
-        excludeSub: string;
+        excludeSub?: string;
         ownedSkillIds?: string[];
         desiredSkillIds?: string[];
         limit?: number;
     }): Promise<any[]> {
-        const { excludeSub, ownedSkillIds, desiredSkillIds, limit = 20 } = params;
+        const { ownedSkillIds, desiredSkillIds, limit } = params;
 
-        // Простая реализация: загружаем пользователей с навыками и фильтруем в памяти
+        // Загружаем всех пользователей с навыками и фильтруем по необходимости
         const users = await this.repo.find({
-            where: { },
             relations: ['skills', 'skills.skill'],
             order: { last_login_at: 'DESC', created_at: 'DESC' },
-            take: 200, // мягкий верхний лимит перед фильтрацией
         });
 
-        const filtered = users
-            .filter(u => u.auth_user_id !== excludeSub)
-            .filter(u => {
-                // Если фильтры не заданы — оставляем всех
-                const ownedOk = !ownedSkillIds || ownedSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.OWNED && ownedSkillIds.includes(us.skill_id));
-                const desiredOk = !desiredSkillIds || desiredSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.DESIRED && desiredSkillIds.includes(us.skill_id));
-                return ownedOk && desiredOk;
-            })
-            .slice(0, limit);
+        let filtered = users.filter(u => {
+            const ownedOk = !ownedSkillIds || ownedSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.OWNED && ownedSkillIds.includes(us.skill_id));
+            const desiredOk = !desiredSkillIds || desiredSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.DESIRED && desiredSkillIds.includes(us.skill_id));
+            return ownedOk && desiredOk;
+        });
+
+        if (typeof limit === 'number' && limit > 0) {
+            filtered = filtered.slice(0, limit);
+        }
 
         // Преобразуем под мобильный клиент (как getMeBySub)
         return filtered.map(user => {
