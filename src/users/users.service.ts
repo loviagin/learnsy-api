@@ -353,74 +353,6 @@ export class UsersService {
         });
     }
 
-    async getTopUsers(params: {
-        ownedSkillIds?: string[];
-        desiredSkillIds?: string[];
-        limit?: number;
-    }): Promise<any[]> {
-        const { ownedSkillIds, desiredSkillIds, limit = 20 } = params;
-
-        // Базовый запрос с подгрузкой навыков
-        const qb = this.repo
-            .createQueryBuilder('u')
-            .leftJoinAndSelect('u.skills', 'us')
-            .leftJoinAndSelect('us.skill', 's')
-            .orderBy('u.created_at', 'DESC')
-            .limit(limit);
-
-        // Фильтрация по owned навыкам
-        if (ownedSkillIds && ownedSkillIds.length > 0) {
-            qb.andWhere(
-                '(us.type = :ownedType AND s.id IN (:...ownedIds))',
-                { ownedType: SkillType.OWNED, ownedIds: ownedSkillIds }
-            );
-        }
-
-        // Фильтрация по desired навыкам
-        if (desiredSkillIds && desiredSkillIds.length > 0) {
-            qb.andWhere(
-                '(us.type = :desiredType AND s.id IN (:...desiredIds))',
-                { desiredType: SkillType.DESIRED, desiredIds: desiredSkillIds }
-            );
-        }
-
-        const users = await qb.getMany();
-
-        return users.map(user => {
-            const ownedSkills = (user.skills ?? [])
-                .filter(us => us.type === SkillType.OWNED)
-                .map(us => ({
-                    skill: {
-                        id: us.skill.id,
-                        name: us.skill.name,
-                        category: us.skill.category,
-                        icon_name: us.skill.icon_name,
-                    },
-                    level: us.level,
-                }));
-
-            const desiredSkills = (user.skills ?? [])
-                .filter(us => us.type === SkillType.DESIRED)
-                .map(us => ({
-                    skill: {
-                        id: us.skill.id,
-                        name: us.skill.name,
-                        category: us.skill.category,
-                        icon_name: us.skill.icon_name,
-                    },
-                    level: null,
-                }));
-
-            // Возвращаем объект совместимый с AppUser JSON в клиенте
-            const { skills, ...rest } = user as any;
-            return {
-                ...rest,
-                owned_skills: ownedSkills,
-                desired_skills: desiredSkills,
-            };
-        });
-    }
-
     async getUsersCount(): Promise<number> {
         return this.repo.count();
     }
@@ -501,5 +433,65 @@ export class UsersService {
             throw new Error('Failed to fetch updated user');
         }
         return updatedUser;
+    }
+
+    async findFeaturedUsers(params: {
+        excludeSub: string;
+        ownedSkillIds?: string[];
+        desiredSkillIds?: string[];
+        limit?: number;
+    }): Promise<any[]> {
+        const { excludeSub, ownedSkillIds, desiredSkillIds, limit = 20 } = params;
+
+        // Простая реализация: загружаем пользователей с навыками и фильтруем в памяти
+        const users = await this.repo.find({
+            where: { },
+            relations: ['skills', 'skills.skill'],
+            order: { last_login_at: 'DESC', created_at: 'DESC' },
+            take: 200, // мягкий верхний лимит перед фильтрацией
+        });
+
+        const filtered = users
+            .filter(u => u.auth_user_id !== excludeSub)
+            .filter(u => {
+                // Если фильтры не заданы — оставляем всех
+                const ownedOk = !ownedSkillIds || ownedSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.OWNED && ownedSkillIds.includes(us.skill_id));
+                const desiredOk = !desiredSkillIds || desiredSkillIds.length === 0 || u.skills?.some(us => us.type === SkillType.DESIRED && desiredSkillIds.includes(us.skill_id));
+                return ownedOk && desiredOk;
+            })
+            .slice(0, limit);
+
+        // Преобразуем под мобильный клиент (как getMeBySub)
+        return filtered.map(user => {
+            const ownedSkills = user.skills
+                ?.filter(us => us.type === SkillType.OWNED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: us.level,
+                })) || [];
+
+            const desiredSkills = user.skills
+                ?.filter(us => us.type === SkillType.DESIRED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: null,
+                })) || [];
+
+            return {
+                ...user,
+                owned_skills: ownedSkills,
+                desired_skills: desiredSkills,
+            };
+        });
     }
 }
