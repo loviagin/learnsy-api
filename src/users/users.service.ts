@@ -101,8 +101,9 @@ export class UsersService {
                     level: null,
                 })) || [];
             
+            const { skills: _omitSkills, ...rest } = user as any;
             return {
-                ...user,
+                ...rest,
                 owned_skills: ownedSkills,
                 desired_skills: desiredSkills,
                 subscription: subscription,
@@ -385,8 +386,9 @@ export class UsersService {
                     level: null,
                 })) || [];
 
+            const { skills: _omitSkills, ...rest } = user as any;
             return {
-                ...user,
+                ...rest,
                 owned_skills: ownedSkills,
                 desired_skills: desiredSkills,
             };
