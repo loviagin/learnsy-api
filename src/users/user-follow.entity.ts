@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, Unique } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, Unique, JoinColumn } from 'typeorm';
 import { AppUser } from './app-user.entity';
 
 @Entity({ name: 'user_follows' })
@@ -13,10 +13,12 @@ export class UserFollow {
     @Column({ type: 'uuid' })
     following_id: string;
 
-    @ManyToOne(() => AppUser, user => user.id)
+    @ManyToOne(() => AppUser, { eager: true })
+    @JoinColumn({ name: 'follower_id' })
     follower: AppUser;
 
-    @ManyToOne(() => AppUser, user => user.id)
+    @ManyToOne(() => AppUser, { eager: true })
+    @JoinColumn({ name: 'following_id' })
     following: AppUser;
 
     @CreateDateColumn({ type: 'timestamptz' })

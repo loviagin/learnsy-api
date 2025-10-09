@@ -565,30 +565,17 @@ export class UsersService {
             console.log(`📊 Found ${follows.length} follow records`);
 
             // Отладочная информация о записях
-            for (const follow of follows) {
-                console.log(`📋 Follow record:`, {
+            follows.forEach((follow, index) => {
+                console.log(`📋 Follow record ${index + 1}:`, {
                     id: follow.id,
                     follower_id: follow.follower_id,
                     following_id: follow.following_id,
                     follower: follow.follower ? `${follow.follower.name} (${follow.follower.id})` : 'NULL'
                 });
-                
-                // Проверяем, существует ли пользователь
-                if (!follow.follower) {
-                    const userExists = await this.repo.findOne({ where: { id: follow.follower_id } });
-                    console.log(`🔍 User ${follow.follower_id} exists:`, userExists ? 'YES' : 'NO');
-                    
-                    if (!userExists) {
-                        console.log(`🗑️ Deleting orphaned follow record: ${follow.id}`);
-                        await this.userFollowRepo.remove(follow);
-                    }
-                }
-            }
+            });
 
-            // Фильтруем null значения и возвращаем только существующих пользователей
-            const followers = follows
-                .map(follow => follow.follower)
-                .filter(follower => follower !== null && follower !== undefined);
+            // Возвращаем всех подписчиков (теперь связи должны работать)
+            const followers = follows.map(follow => follow.follower).filter(Boolean);
 
             console.log(`👥 Returning ${followers.length} valid followers`);
             return followers;
