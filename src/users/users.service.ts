@@ -547,20 +547,30 @@ export class UsersService {
 
     async getUserFollowers(userId: string): Promise<AppUser[]> {
         try {
+            console.log(`🔍 Getting followers for user: ${userId}`);
+            
             const user = await this.repo.findOne({ where: { id: userId } });
             if (!user) {
+                console.log(`❌ User not found: ${userId}`);
                 return [];
             }
+
+            console.log(`✅ Found user: ${user.name} (${user.id})`);
 
             const follows = await this.userFollowRepo.find({
                 where: { following_id: user.id },
                 relations: ['follower']
             });
 
+            console.log(`📊 Found ${follows.length} follow records`);
+
             // Фильтруем null значения и возвращаем только существующих пользователей
-            return follows
+            const followers = follows
                 .map(follow => follow.follower)
                 .filter(follower => follower !== null && follower !== undefined);
+
+            console.log(`👥 Returning ${followers.length} valid followers`);
+            return followers;
         } catch (error) {
             console.error('Error fetching user followers:', error);
             return [];
