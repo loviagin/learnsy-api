@@ -347,9 +347,41 @@ export class UsersService {
         ];
     }
 
-    async getAllUsers(): Promise<AppUser[]> {
-        return this.repo.find({
+    async getAllUsers(): Promise<any[]> {
+        const users = await this.repo.find({
+            relations: ['skills', 'skills.skill'],
             order: { created_at: 'DESC' }
+        });
+        return users.map((user) => {
+            const ownedSkills = user.skills
+                ?.filter(us => us.type === SkillType.OWNED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: us.level,
+                })) || [];
+
+            const desiredSkills = user.skills
+                ?.filter(us => us.type === SkillType.DESIRED)
+                .map(us => ({
+                    skill: {
+                        id: us.skill.id,
+                        name: us.skill.name,
+                        category: us.skill.category,
+                        icon_name: us.skill.icon_name,
+                    },
+                    level: null,
+                })) || [];
+
+            return {
+                ...user,
+                owned_skills: ownedSkills,
+                desired_skills: desiredSkills,
+            };
         });
     }
 
