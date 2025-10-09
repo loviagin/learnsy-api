@@ -232,7 +232,7 @@ export class UsersService {
             // Business
             { id: 'marketing', name: 'Marketing', category: 'Business', icon_name: 'megaphone.fill' },
             { id: 'sales', name: 'Sales', category: 'Business', icon_name: 'chart.line.uptrend.xyaxis' },
-            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.3.fill' },
+            { id: 'management', name: 'Management', category: 'Business', icon_name: 'person.2.fill' },
             { id: 'accounting', name: 'Accounting', category: 'Business', icon_name: 'dollarsign.circle.fill' },
             { id: 'leadership', name: 'Leadership', category: 'Business', icon_name: 'star.fill' },
             { id: 'negotiation', name: 'Negotiation', category: 'Business', icon_name: 'handshake.fill' },
@@ -344,7 +344,7 @@ export class UsersService {
             // Social & Volunteer
             { id: 'volunteering', name: 'Volunteering', category: 'Social', icon_name: 'heart.fill' },
             { id: 'counseling', name: 'Counseling', category: 'Social', icon_name: 'bubble.left.and.bubble.right.fill' },
-            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.3.fill' },
+            { id: 'social_work', name: 'Social Work', category: 'Social', icon_name: 'person.2.fill' },
             
             // Other
             { id: 'driving', name: 'Driving', category: 'Other', icon_name: 'car.fill' },
