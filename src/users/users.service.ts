@@ -523,7 +523,7 @@ export class UsersService {
         }
     }
 
-    async getUserSubscriptions(userId: string): Promise<AppUser[]> {
+    async getUserSubscriptions(userId: string): Promise<any[]> {
         try {
             const user = await this.repo.findOne({ where: { id: userId } });
             if (!user) {
@@ -535,17 +535,25 @@ export class UsersService {
                 relations: ['following']
             });
 
-            // Фильтруем null значения и возвращаем только существующих пользователей
-            return follows
+            // Возвращаем всех подписок с правильной структурой
+            const subscriptions = follows
                 .map(follow => follow.following)
-                .filter(following => following !== null && following !== undefined);
+                .filter(user => user !== null && user !== undefined)
+                .map(user => ({
+                    ...user,
+                    owned_skills: user.skills?.filter(skill => skill.type === 'owned') || [],
+                    desired_skills: user.skills?.filter(skill => skill.type === 'desired') || [],
+                    skills: undefined // Убираем оригинальное поле
+                }));
+            
+            return subscriptions;
         } catch (error) {
             console.error('Error fetching user subscriptions:', error);
             return [];
         }
     }
 
-    async getUserFollowers(userId: string): Promise<AppUser[]> {
+    async getUserFollowers(userId: string): Promise<any[]> {
         try {
             console.log(`🔍 Getting followers for user: ${userId}`);
             
@@ -574,8 +582,16 @@ export class UsersService {
                 });
             });
 
-            // Возвращаем всех подписчиков (теперь связи должны работать)
-            const followers = follows.map(follow => follow.follower).filter(Boolean);
+            // Возвращаем всех подписчиков с правильной структурой
+            const followers = follows
+                .map(follow => follow.follower)
+                .filter(user => user !== null && user !== undefined)
+                .map(user => ({
+                    ...user,
+                    owned_skills: user.skills?.filter(skill => skill.type === 'owned') || [],
+                    desired_skills: user.skills?.filter(skill => skill.type === 'desired') || [],
+                    skills: undefined // Убираем оригинальное поле
+                }));
 
             console.log(`👥 Returning ${followers.length} valid followers`);
             return followers;
