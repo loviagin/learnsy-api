@@ -355,7 +355,7 @@ export class UsersService {
         const filtered = excludeAuthUserId
             ? users.filter(u => u.auth_user_id !== excludeAuthUserId)
             : users;
-        return filtered.map((user) => {
+        const mapped = filtered.map((user) => {
             const ownedSkills = user.skills
                 ?.filter(us => us.type === SkillType.OWNED)
                 .map(us => ({
@@ -385,6 +385,14 @@ export class UsersService {
                 owned_skills: ownedSkills,
                 desired_skills: desiredSkills,
             };
+        });
+
+        // Hide users without avatar and without both skills sets
+        return mapped.filter(u => {
+            const hasAvatar = !!u.avatar_url && String(u.avatar_url).trim().length > 0;
+            const hasOwned = Array.isArray(u.owned_skills) && u.owned_skills.length > 0;
+            const hasDesired = Array.isArray(u.desired_skills) && u.desired_skills.length > 0;
+            return hasAvatar && hasOwned && hasDesired;
         });
     }
 
