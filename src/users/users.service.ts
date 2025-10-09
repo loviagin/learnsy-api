@@ -559,4 +559,22 @@ export class UsersService {
         }
     }
 
+    async getUserById(userId: string): Promise<AppUser | null> {
+        try {
+            const user = await this.repo.findOne({
+                where: { id: userId },
+                relations: ['ownedSkills', 'ownedSkills.skill', 'desiredSkills', 'desiredSkills.skill']
+            });
+
+            if (!user) {
+                return null;
+            }
+
+            return user;
+        } catch (error) {
+            console.error('Error fetching user by ID:', error);
+            return null;
+        }
+    }
+
 }

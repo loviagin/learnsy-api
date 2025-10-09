@@ -158,4 +158,10 @@ export class UsersController {
   async isFollowing(@ReqUser() user: JwtUser, @Param('userId') userId: string) {
     return this.users.isFollowing(user.sub, userId);
   }
+
+  // Get user profile by ID
+  @Get('users/:userId')
+  async getUserProfile(@Param('userId') userId: string) {
+    return this.users.getUserById(userId);
+  }
 }
