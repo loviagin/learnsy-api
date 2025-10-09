@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { DeepPartial } from 'typeorm';
 import { AppUser } from './app-user.entity';
 import { Skill } from './skill.entity';
@@ -483,6 +484,77 @@ export class UsersService {
             throw new Error('Failed to fetch updated user');
         }
         return updatedUser;
+    }
+
+    // ADMIN: обновление пользователя по id
+    async adminUpdateUser(id: string, body: {
+        name?: string;
+        username?: string;
+        email?: string;
+        avatarUrl?: string;
+        bio?: string;
+        birthDate?: string;
+        roles?: string[];
+        subscription?: any; // произвольный json текущего состояния подписки
+        ownedSkills?: Array<{ skillId: string; level: string }>;
+        desiredSkills?: Array<{ skillId: string }>;
+    }) {
+        const user = await this.repo.findOne({ where: { id }, relations: ['skills', 'skills.skill'] });
+        if (!user) throw new Error('User not found');
+
+        const patch: QueryDeepPartialEntity<AppUser> = {} as any;
+        if (body.name !== undefined) patch.name = body.name ?? null as any;
+        if (body.username !== undefined) patch.username = body.username ?? null as any;
+        if (body.email !== undefined) patch.email_snapshot = body.email ?? null as any;
+        if (body.avatarUrl !== undefined) patch.avatar_url = body.avatarUrl ?? null as any;
+        if (body.bio !== undefined) patch.bio = body.bio ?? null as any;
+        if (body.birthDate !== undefined) patch.birth_date = body.birthDate ? new Date(body.birthDate) : null as any;
+        if (body.roles !== undefined) patch.roles = body.roles as any;
+        if (body.subscription !== undefined) (patch as any).subscription_json = body.subscription as any;
+        (patch as any).updated_at = new Date();
+
+        if (Object.keys(patch).length > 0) {
+            await this.repo.update({ id }, patch);
+        }
+
+        if (body.ownedSkills !== undefined || body.desiredSkills !== undefined) {
+            await this.updateUserSkillsInternal(id, body.ownedSkills, body.desiredSkills);
+        }
+
+        const updated = await this.repo.findOne({ where: { id }, relations: ['skills', 'skills.skill'] });
+        if (!updated) throw new Error('User not found after update');
+
+        const ownedSkills = updated.skills
+            ?.filter(us => us.type === SkillType.OWNED)
+            .map(us => ({
+                skill: {
+                    id: us.skill.id,
+                    name: us.skill.name,
+                    category: us.skill.category,
+                    icon_name: us.skill.icon_name,
+                },
+                level: us.level,
+            })) || [];
+
+        const desiredSkills = updated.skills
+            ?.filter(us => us.type === SkillType.DESIRED)
+            .map(us => ({
+                skill: {
+                    id: us.skill.id,
+                    name: us.skill.name,
+                    category: us.skill.category,
+                    icon_name: us.skill.icon_name,
+                },
+                level: null,
+            })) || [];
+
+        const { skills: _omit, ...rest } = updated as any;
+        return {
+            ...rest,
+            owned_skills: ownedSkills,
+            desired_skills: desiredSkills,
+            subscription: (updated as any).subscription_json ?? null,
+        };
     }
 
     // ADMIN: вернуть всех пользователей без исключений и без дополнительной фильтрации

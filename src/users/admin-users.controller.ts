@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('admin/users')
@@ -43,5 +43,24 @@ export class AdminUsersController {
         email: deletedUser.email_snapshot
       }
     };
+  }
+
+  @Put(':id')
+  async updateUser(
+    @Param('id') id: string,
+    @Body() body: {
+      name?: string;
+      username?: string;
+      email?: string;
+      avatarUrl?: string;
+      bio?: string;
+      birthDate?: string;
+      roles?: string[];
+      subscription?: any;
+      ownedSkills?: Array<{ skillId: string; level: string }>;
+      desiredSkills?: Array<{ skillId: string }>;
+    }
+  ) {
+    return this.users.adminUpdateUser(id, body);
   }
 }
