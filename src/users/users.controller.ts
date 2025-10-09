@@ -164,4 +164,16 @@ export class UsersController {
   async getUserProfile(@Param('userId') userId: string) {
     return this.users.getUserById(userId);
   }
+
+  // Get user's followers
+  @Get('users/:userId/followers')
+  async getUserFollowers(@Param('userId') userId: string) {
+    return this.users.getUserFollowers(userId);
+  }
+
+  // Get user's subscriptions
+  @Get('users/:userId/subscriptions')
+  async getUserSubscriptions(@Param('userId') userId: string) {
+    return this.users.getUserSubscriptions(userId);
+  }
 }

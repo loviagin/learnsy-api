@@ -523,9 +523,9 @@ export class UsersService {
         }
     }
 
-    async getUserSubscriptions(authUserId: string): Promise<AppUser[]> {
+    async getUserSubscriptions(userId: string): Promise<AppUser[]> {
         try {
-            const user = await this.repo.findOne({ where: { auth_user_id: authUserId } });
+            const user = await this.repo.findOne({ where: { id: userId } });
             if (!user) {
                 return [];
             }
@@ -537,13 +537,14 @@ export class UsersService {
 
             return follows.map(follow => follow.following);
         } catch (error) {
+            console.error('Error fetching user subscriptions:', error);
             return [];
         }
     }
 
-    async getUserFollowers(authUserId: string): Promise<AppUser[]> {
+    async getUserFollowers(userId: string): Promise<AppUser[]> {
         try {
-            const user = await this.repo.findOne({ where: { auth_user_id: authUserId } });
+            const user = await this.repo.findOne({ where: { id: userId } });
             if (!user) {
                 return [];
             }
@@ -555,6 +556,7 @@ export class UsersService {
 
             return follows.map(follow => follow.follower);
         } catch (error) {
+            console.error('Error fetching user followers:', error);
             return [];
         }
     }
