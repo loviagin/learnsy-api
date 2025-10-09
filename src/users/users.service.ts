@@ -392,6 +392,7 @@ export class UsersService {
                 ...rest,
                 owned_skills: ownedSkills,
                 desired_skills: desiredSkills,
+                subscription: (user as any).subscription_json ?? null,
             };
         });
 
