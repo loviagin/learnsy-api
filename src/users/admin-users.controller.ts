@@ -7,7 +7,7 @@ export class AdminUsersController {
 
   @Get('all')
   async getAllUsers() {
-    return this.users.getAllUsers();
+    return this.users.getAllUsersAdmin();
   }
 
   @Get('count')
