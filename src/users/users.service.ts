@@ -7,6 +7,7 @@ import { AppUser } from './app-user.entity';
 import { Skill } from './skill.entity';
 import { UserSkill, SkillType } from './user-skill.entity';
 import { UserSubscription } from './user-subscription.entity';
+import { UserFollow } from './user-follow.entity';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +16,7 @@ export class UsersService {
         @InjectRepository(Skill) private skillRepo: Repository<Skill>,
         @InjectRepository(UserSkill) private userSkillRepo: Repository<UserSkill>,
         @InjectRepository(UserSubscription) private userSubRepo: Repository<UserSubscription>,
+        @InjectRepository(UserFollow) private userFollowRepo: Repository<UserFollow>,
     ) { }
 
     async ensureBySub(params: {
@@ -425,6 +427,136 @@ export class UsersService {
             throw new Error('Failed to fetch updated user');
         }
         return updatedUser;
+    }
+
+    // MARK: - Follow/Subscription Methods
+    async followUser(followerAuthId: string, followingUserId: string): Promise<{ success: boolean; message: string }> {
+        try {
+            // Get follower user
+            const follower = await this.repo.findOne({ where: { auth_user_id: followerAuthId } });
+            if (!follower) {
+                throw new Error('Follower not found');
+            }
+
+            // Get following user
+            const following = await this.repo.findOne({ where: { id: followingUserId } });
+            if (!following) {
+                throw new Error('User to follow not found');
+            }
+
+            // Check if already following
+            const existingFollow = await this.userFollowRepo.findOne({
+                where: { follower_id: follower.id, following_id: following.id }
+            });
+
+            if (existingFollow) {
+                return { success: false, message: 'Already following this user' };
+            }
+
+            // Create follow relationship
+            const follow = this.userFollowRepo.create({
+                follower_id: follower.id,
+                following_id: following.id
+            });
+
+            await this.userFollowRepo.save(follow);
+
+            // Update counters
+            await this.repo.increment({ id: following.id }, 'subscribers_count', 1);
+            await this.repo.increment({ id: follower.id }, 'subscriptions_count', 1);
+
+            return { success: true, message: 'Successfully followed user' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async unfollowUser(followerAuthId: string, followingUserId: string): Promise<{ success: boolean; message: string }> {
+        try {
+            // Get follower user
+            const follower = await this.repo.findOne({ where: { auth_user_id: followerAuthId } });
+            if (!follower) {
+                throw new Error('Follower not found');
+            }
+
+            // Get following user
+            const following = await this.repo.findOne({ where: { id: followingUserId } });
+            if (!following) {
+                throw new Error('User to unfollow not found');
+            }
+
+            // Find and delete follow relationship
+            const follow = await this.userFollowRepo.findOne({
+                where: { follower_id: follower.id, following_id: following.id }
+            });
+
+            if (!follow) {
+                return { success: false, message: 'Not following this user' };
+            }
+
+            await this.userFollowRepo.remove(follow);
+
+            // Update counters
+            await this.repo.decrement({ id: following.id }, 'subscribers_count', 1);
+            await this.repo.decrement({ id: follower.id }, 'subscriptions_count', 1);
+
+            return { success: true, message: 'Successfully unfollowed user' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async isFollowing(followerAuthId: string, followingUserId: string): Promise<{ isFollowing: boolean }> {
+        try {
+            const follower = await this.repo.findOne({ where: { auth_user_id: followerAuthId } });
+            if (!follower) {
+                return { isFollowing: false };
+            }
+
+            const follow = await this.userFollowRepo.findOne({
+                where: { follower_id: follower.id, following_id: followingUserId }
+            });
+
+            return { isFollowing: !!follow };
+        } catch (error) {
+            return { isFollowing: false };
+        }
+    }
+
+    async getUserSubscriptions(authUserId: string): Promise<AppUser[]> {
+        try {
+            const user = await this.repo.findOne({ where: { auth_user_id: authUserId } });
+            if (!user) {
+                return [];
+            }
+
+            const follows = await this.userFollowRepo.find({
+                where: { follower_id: user.id },
+                relations: ['following']
+            });
+
+            return follows.map(follow => follow.following);
+        } catch (error) {
+            return [];
+        }
+    }
+
+    async getUserFollowers(authUserId: string): Promise<AppUser[]> {
+        try {
+            const user = await this.repo.findOne({ where: { auth_user_id: authUserId } });
+            if (!user) {
+                return [];
+            }
+
+            const follows = await this.userFollowRepo.find({
+                where: { following_id: user.id },
+                relations: ['follower']
+            });
+
+            return follows.map(follow => follow.follower);
+        } catch (error) {
+            return [];
+        }
     }
 
 }

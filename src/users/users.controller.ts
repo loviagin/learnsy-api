@@ -1,5 +1,5 @@
 // src/users/users.controller.ts
-import { Controller, Get, Post, Put, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -130,4 +130,32 @@ export class UsersController {
     return this.users.getAllUsers(user.sub);
   }
 
+  // Follow/Unfollow user
+  @Post('users/:userId/follow')
+  async followUser(@ReqUser() user: JwtUser, @Param('userId') userId: string) {
+    return this.users.followUser(user.sub, userId);
+  }
+
+  @Delete('users/:userId/follow')
+  async unfollowUser(@ReqUser() user: JwtUser, @Param('userId') userId: string) {
+    return this.users.unfollowUser(user.sub, userId);
+  }
+
+  // Get user's subscriptions
+  @Get('me/subscriptions')
+  async getMySubscriptions(@ReqUser() user: JwtUser) {
+    return this.users.getUserSubscriptions(user.sub);
+  }
+
+  // Get user's followers
+  @Get('me/followers')
+  async getMyFollowers(@ReqUser() user: JwtUser) {
+    return this.users.getUserFollowers(user.sub);
+  }
+
+  // Check if following user
+  @Get('users/:userId/following')
+  async isFollowing(@ReqUser() user: JwtUser, @Param('userId') userId: string) {
+    return this.users.isFollowing(user.sub, userId);
+  }
 }
