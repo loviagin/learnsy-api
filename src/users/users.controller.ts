@@ -159,7 +159,7 @@ export class UsersController {
     return this.users.isFollowing(user.sub, userId);
   }
 
-  // Get user profile by ID
+  // Get user profile by ID (public endpoint)
   @Get('users/:userId')
   async getUserProfile(@Param('userId') userId: string) {
     return this.users.getUserById(userId);
