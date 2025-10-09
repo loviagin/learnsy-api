@@ -564,6 +564,16 @@ export class UsersService {
 
             console.log(`📊 Found ${follows.length} follow records`);
 
+            // Отладочная информация о записях
+            follows.forEach((follow, index) => {
+                console.log(`📋 Follow record ${index + 1}:`, {
+                    id: follow.id,
+                    follower_id: follow.follower_id,
+                    following_id: follow.following_id,
+                    follower: follow.follower ? `${follow.follower.name} (${follow.follower.id})` : 'NULL'
+                });
+            });
+
             // Фильтруем null значения и возвращаем только существующих пользователей
             const followers = follows
                 .map(follow => follow.follower)
