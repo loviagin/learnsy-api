@@ -5,6 +5,7 @@ import { DeepPartial } from 'typeorm';
 import { AppUser } from './app-user.entity';
 import { Skill } from './skill.entity';
 import { UserSkill, SkillType } from './user-skill.entity';
+import { UserSubscription } from './user-subscription.entity';
 
 @Injectable()
 export class UsersService {
@@ -12,6 +13,7 @@ export class UsersService {
         @InjectRepository(AppUser) private repo: Repository<AppUser>,
         @InjectRepository(Skill) private skillRepo: Repository<Skill>,
         @InjectRepository(UserSkill) private userSkillRepo: Repository<UserSkill>,
+        @InjectRepository(UserSubscription) private userSubRepo: Repository<UserSubscription>,
     ) { }
 
     async ensureBySub(params: {
@@ -72,6 +74,8 @@ export class UsersService {
         });
         
         if (user) {
+            // Прочитаем текущее состояние подписки из кэша (subscription_json)
+            const subscription = user.subscription_json ?? null;
             // Преобразуем навыки в удобный формат для клиента
             const ownedSkills = user.skills
                 ?.filter(us => us.type === SkillType.OWNED)
@@ -101,6 +105,7 @@ export class UsersService {
                 ...user,
                 owned_skills: ownedSkills,
                 desired_skills: desiredSkills,
+                subscription: subscription,
             };
         }
         

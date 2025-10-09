@@ -26,6 +26,21 @@ export class AppUser {
     @Column({ type: 'text', nullable: true })
     bio?: string;
 
+    // Текущее состояние подписки пользователя (кэш для быстрых ответов API)
+    @Column({ type: 'jsonb', nullable: true })
+    subscription_json?: {
+        plan?: string;
+        status?: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired' | 'grace';
+        startedAt?: string; // ISO8601
+        currentPeriodEnd?: string; // ISO8601
+        cancelAtPeriodEnd?: boolean;
+        trialEndsAt?: string | null; // ISO8601
+        autoRenew?: boolean;
+        source?: 'appstore' | 'stripe' | 'promo' | 'internal';
+        entitlements?: string[];
+        meta?: Record<string, unknown>;
+    } | null;
+
     @Column({ type: 'text', array: true, default: () => "'{}'" })
     roles: string[];
 
