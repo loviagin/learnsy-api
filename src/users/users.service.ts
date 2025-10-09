@@ -559,7 +559,7 @@ export class UsersService {
         }
     }
 
-    async getUserById(userId: string): Promise<AppUser | null> {
+    async getUserById(userId: string): Promise<any> {
         try {
             const user = await this.repo.findOne({
                 where: { id: userId },
@@ -570,7 +570,16 @@ export class UsersService {
                 return null;
             }
 
-            return user;
+            // Преобразуем данные в формат, ожидаемый iOS приложением
+            const ownedSkills = user.skills?.filter(skill => skill.type === 'owned') || [];
+            const desiredSkills = user.skills?.filter(skill => skill.type === 'desired') || [];
+
+            return {
+                ...user,
+                owned_skills: ownedSkills,
+                desired_skills: desiredSkills,
+                skills: undefined // Убираем оригинальное поле
+            };
         } catch (error) {
             console.error('Error fetching user by ID:', error);
             return null;
