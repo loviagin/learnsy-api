@@ -102,7 +102,7 @@ export class UsersService {
                     level: null,
                 })) || [];
             
-            const { skills: _omitSkills, ...rest } = user as any;
+            const { skills: _omitSkills, subscription_json: _omitSub, ...rest } = user as any;
             return {
                 ...rest,
                 owned_skills: ownedSkills,
@@ -387,7 +387,7 @@ export class UsersService {
                     level: null,
                 })) || [];
 
-            const { skills: _omitSkills, ...rest } = user as any;
+            const { skills: _omitSkills, subscription_json: _omitSub, ...rest } = user as any;
             return {
                 ...rest,
                 owned_skills: ownedSkills,
@@ -548,7 +548,7 @@ export class UsersService {
                 level: null,
             })) || [];
 
-        const { skills: _omit, ...rest } = updated as any;
+        const { skills: _omit, subscription_json: _omitSub2, ...rest } = updated as any;
         return {
             ...rest,
             owned_skills: ownedSkills,
