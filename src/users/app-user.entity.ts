@@ -44,6 +44,12 @@ export class AppUser {
     @Column({ type: 'text', array: true, default: () => "'{}'" })
     roles: string[];
 
+    @Column({ type: 'integer', default: 0 })
+    subscribers_count: number;
+
+    @Column({ type: 'integer', default: 0 })
+    subscriptions_count: number;
+
     @OneToMany(() => UserSkill, userSkill => userSkill.user)
     skills: UserSkill[];
 
