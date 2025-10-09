@@ -535,7 +535,10 @@ export class UsersService {
                 relations: ['following']
             });
 
-            return follows.map(follow => follow.following);
+            // Фильтруем null значения и возвращаем только существующих пользователей
+            return follows
+                .map(follow => follow.following)
+                .filter(following => following !== null && following !== undefined);
         } catch (error) {
             console.error('Error fetching user subscriptions:', error);
             return [];
@@ -554,7 +557,10 @@ export class UsersService {
                 relations: ['follower']
             });
 
-            return follows.map(follow => follow.follower);
+            // Фильтруем null значения и возвращаем только существующих пользователей
+            return follows
+                .map(follow => follow.follower)
+                .filter(follower => follower !== null && follower !== undefined);
         } catch (error) {
             console.error('Error fetching user followers:', error);
             return [];
