@@ -347,12 +347,15 @@ export class UsersService {
         ];
     }
 
-    async getAllUsers(): Promise<any[]> {
+    async getAllUsers(excludeAuthUserId?: string): Promise<any[]> {
         const users = await this.repo.find({
             relations: ['skills', 'skills.skill'],
             order: { created_at: 'DESC' }
         });
-        return users.map((user) => {
+        const filtered = excludeAuthUserId
+            ? users.filter(u => u.auth_user_id !== excludeAuthUserId)
+            : users;
+        return filtered.map((user) => {
             const ownedSkills = user.skills
                 ?.filter(us => us.type === SkillType.OWNED)
                 .map(us => ({

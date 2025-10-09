@@ -126,8 +126,8 @@ export class UsersController {
 
   // List all users for the main screen
   @Get('users')
-  async listUsers() {
-    return this.users.getAllUsers();
+  async listUsers(@ReqUser() user: JwtUser) {
+    return this.users.getAllUsers(user.sub);
   }
 
 }
