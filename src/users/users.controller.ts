@@ -159,9 +159,8 @@ export class UsersController {
     return this.users.isFollowing(user.sub, userId);
   }
 
-  // Get user profile by ID (public endpoint)
+  // Get user profile by ID
   @Get('users/:userId')
-  @UseGuards() // Override the class-level guard to make this endpoint public
   async getUserProfile(@Param('userId') userId: string) {
     return this.users.getUserById(userId);
   }
