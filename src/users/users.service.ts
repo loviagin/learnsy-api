@@ -563,7 +563,7 @@ export class UsersService {
         try {
             const user = await this.repo.findOne({
                 where: { id: userId },
-                relations: ['ownedSkills', 'ownedSkills.skill', 'desiredSkills', 'desiredSkills.skill']
+                relations: ['skills', 'skills.skill']
             });
 
             if (!user) {
