@@ -56,7 +56,13 @@ export class ChatsService {
             user_id: currentUser.id,
             role: 'admin',
         });
-        await this.participantRepository.save(creatorParticipant);
+        const savedCreatorParticipant = await this.participantRepository.save(creatorParticipant);
+        console.log(`[ChatService] Creator participant saved:`, {
+            id: savedCreatorParticipant.id,
+            chat_id: savedCreatorParticipant.chat_id,
+            user_id: savedCreatorParticipant.user_id,
+            role: savedCreatorParticipant.role
+        });
 
         // For direct chats, add the other participant
         if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
