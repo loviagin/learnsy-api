@@ -46,6 +46,9 @@ export class NotificationsService {
     }
 
     async registerDeviceToken(userId: string, token: string, platform: string = 'ios'): Promise<DeviceToken> {
+        console.log(`📱 [NotificationsService] Registering device token for user ${userId}`);
+        console.log(`📱 [NotificationsService] Token: ${token.substring(0, 20)}...`);
+        
         // Check if token already exists
         let deviceToken = await this.deviceTokenRepository.findOne({
             where: { token, user_id: userId }
@@ -53,18 +56,24 @@ export class NotificationsService {
 
         if (deviceToken) {
             // Update existing token
+            console.log(`📱 [NotificationsService] Updating existing token`);
             deviceToken.is_active = true;
             deviceToken.updated_at = new Date();
-            return this.deviceTokenRepository.save(deviceToken);
+            const savedToken = await this.deviceTokenRepository.save(deviceToken);
+            console.log(`📱 [NotificationsService] Token updated successfully`);
+            return savedToken;
         } else {
             // Create new token
+            console.log(`📱 [NotificationsService] Creating new token`);
             deviceToken = this.deviceTokenRepository.create({
                 user_id: userId,
                 token,
                 platform,
                 is_active: true
             });
-            return this.deviceTokenRepository.save(deviceToken);
+            const savedToken = await this.deviceTokenRepository.save(deviceToken);
+            console.log(`📱 [NotificationsService] Token created successfully with ID: ${savedToken.id}`);
+            return savedToken;
         }
     }
 
@@ -74,12 +83,20 @@ export class NotificationsService {
         senderName: string,
         recipientUserIds: string[]
     ): Promise<void> {
+        console.log(`📱 [NotificationsService] Starting notification for chat ${chatId}`);
+        console.log(`📱 [NotificationsService] Recipient user IDs: ${JSON.stringify(recipientUserIds)}`);
+        
         // Get device tokens for all recipients
         const deviceTokens = await this.deviceTokenRepository.find({
             where: recipientUserIds.map(userId => ({ user_id: userId, is_active: true }))
         });
 
-        console.log(`📱 Notification for chat ${chatId}:`);
+        console.log(`📱 [NotificationsService] Found ${deviceTokens.length} device tokens`);
+        deviceTokens.forEach(token => {
+            console.log(`📱 [NotificationsService] Token for user ${token.user_id}: ${token.token.substring(0, 20)}...`);
+        });
+
+        console.log(`📱 [NotificationsService] Notification details:`);
         console.log(`   Sender: ${senderName}`);
         console.log(`   Message: ${messageContent}`);
         console.log(`   Recipients: ${recipientUserIds.length} users, ${deviceTokens.length} tokens`);
