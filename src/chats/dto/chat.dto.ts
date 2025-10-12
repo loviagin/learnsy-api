@@ -67,7 +67,6 @@ export class ChatParticipantResponseDto {
     role: 'admin' | 'member';
     user?: {
         id: string;
-        auth_user_id: string;
         name?: string;
         username?: string;
         avatar_url?: string;
@@ -88,7 +87,6 @@ export class ChatMessageResponseDto {
     is_deleted: boolean;
     user?: {
         id: string;
-        auth_user_id: string;
         name?: string;
         username?: string;
         avatar_url?: string;

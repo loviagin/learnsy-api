@@ -390,7 +390,6 @@ export class ChatsService {
             role: participant.role,
             user: participant.user ? {
                 id: participant.user.id,
-                auth_user_id: participant.user.auth_user_id,
                 name: participant.user.name,
                 username: participant.user.username,
                 avatar_url: participant.user.avatar_url,
@@ -413,7 +412,6 @@ export class ChatsService {
             is_deleted: message.is_deleted,
             user: message.user ? {
                 id: message.user.id,
-                auth_user_id: message.user.auth_user_id,
                 name: message.user.name,
                 username: message.user.username,
                 avatar_url: message.user.avatar_url,
