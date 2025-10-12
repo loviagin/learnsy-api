@@ -70,6 +70,7 @@ export class ChatParticipantResponseDto {
         name?: string;
         username?: string;
         avatar_url?: string;
+        roles?: string[];
     };
 }
 
@@ -90,6 +91,7 @@ export class ChatMessageResponseDto {
         name?: string;
         username?: string;
         avatar_url?: string;
+        roles?: string[];
     };
     reply_to?: ChatMessageResponseDto;
 }

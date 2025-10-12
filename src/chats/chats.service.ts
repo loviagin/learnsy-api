@@ -393,6 +393,7 @@ export class ChatsService {
                 name: participant.user.name,
                 username: participant.user.username,
                 avatar_url: participant.user.avatar_url,
+                roles: participant.user.roles || [],
             } : undefined,
         };
     }
@@ -415,6 +416,7 @@ export class ChatsService {
                 name: message.user.name,
                 username: message.user.username,
                 avatar_url: message.user.avatar_url,
+                roles: message.user.roles || [],
             } : undefined,
             reply_to: message.reply_to ? this.formatMessageResponse(message.reply_to) : undefined,
         };
