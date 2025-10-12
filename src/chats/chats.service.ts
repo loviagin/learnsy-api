@@ -398,6 +398,8 @@ export class ChatsService {
                 desired_skills: [],
                 created_at: participant.user.created_at?.toISOString(),
                 updated_at: participant.user.updated_at?.toISOString(),
+                subscribers_count: 0,
+                subscriptions_count: 0,
             } : undefined,
         };
     }
@@ -425,6 +427,8 @@ export class ChatsService {
                 desired_skills: [],
                 created_at: message.user.created_at?.toISOString(),
                 updated_at: message.user.updated_at?.toISOString(),
+                subscribers_count: 0,
+                subscriptions_count: 0,
             } : undefined,
             reply_to: message.reply_to ? this.formatMessageResponse(message.reply_to) : undefined,
         };

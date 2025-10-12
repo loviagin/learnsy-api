@@ -75,6 +75,8 @@ export class ChatParticipantResponseDto {
         desired_skills?: any[];
         created_at?: string;
         updated_at?: string;
+        subscribers_count?: number;
+        subscriptions_count?: number;
     };
 }
 
@@ -100,6 +102,8 @@ export class ChatMessageResponseDto {
         desired_skills?: any[];
         created_at?: string;
         updated_at?: string;
+        subscribers_count?: number;
+        subscriptions_count?: number;
     };
     reply_to?: ChatMessageResponseDto;
 }
