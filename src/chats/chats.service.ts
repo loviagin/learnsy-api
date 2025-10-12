@@ -5,6 +5,7 @@ import { Chat, ChatParticipant, ChatMessage } from './chat.entity';
 import { AppUser } from '../users/app-user.entity';
 import { CreateChatDto, UpdateChatDto, AddParticipantDto, CreateMessageDto, UpdateMessageDto, MarkAsReadDto, ChatResponseDto, ChatParticipantResponseDto, ChatMessageResponseDto } from './dto/chat.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ChatsGateway } from './chats.gateway';
 
 @Injectable()
 export class ChatsService {
@@ -18,6 +19,7 @@ export class ChatsService {
         @InjectRepository(AppUser)
         private userRepository: Repository<AppUser>,
         private notificationsService: NotificationsService,
+        private chatsGateway: ChatsGateway,
     ) {}
 
     async createChat(createChatDto: CreateChatDto, currentUserId: string): Promise<ChatResponseDto> {
@@ -69,7 +71,18 @@ export class ChatsService {
             await this.addParticipant(savedChat.id, { user_id: createChatDto.participant_user_id, role: 'member' }, currentUserId);
         }
 
-        return this.formatChatResponse(savedChat);
+        const chatResponse = await this.formatChatResponse(savedChat);
+        
+        // Notify participants about new chat
+        const participants = await this.participantRepository.find({
+            where: { chat_id: savedChat.id }
+        });
+        
+        for (const participant of participants) {
+            await this.chatsGateway.notifyNewChat(participant.user_id, chatResponse);
+        }
+
+        return chatResponse;
     }
 
     async getUserChats(userId: string): Promise<ChatResponseDto[]> {
@@ -141,6 +154,11 @@ export class ChatsService {
 
         console.log(`[ChatService] User ${userId} can delete chat ${chatId} (type: ${chat.type}, role: ${participant.role})`);
 
+        // Get all participants before deletion
+        const participants = await this.participantRepository.find({
+            where: { chat_id: chatId }
+        });
+
         // Delete all messages first
         await this.messageRepository.delete({ chat_id: chatId });
         
@@ -149,6 +167,11 @@ export class ChatsService {
         
         // Delete the chat
         await this.chatRepository.delete({ id: chatId });
+
+        // Notify all participants about chat deletion
+        for (const participant of participants) {
+            await this.chatsGateway.notifyChatDeleted(participant.user_id, chatId);
+        }
     }
 
     async getChatById(chatId: string, userId: string): Promise<ChatResponseDto> {
@@ -328,7 +351,12 @@ export class ChatsService {
             console.log(`[ChatService] No other participants to notify`);
         }
 
-        return this.formatMessageResponse(savedMessage);
+        const messageResponse = this.formatMessageResponse(savedMessage);
+        
+        // Notify chat participants about new message via WebSocket
+        await this.chatsGateway.notifyNewMessage(chatId, messageResponse, user.id);
+
+        return messageResponse;
     }
 
     async getChatMessages(chatId: string, userId: string, limit: number = 50, offset: number = 0): Promise<ChatMessageResponseDto[]> {
