@@ -18,19 +18,27 @@ export class NotificationsService {
 
     private initializeApnProvider() {
         try {
-            // For development, you can use key-based authentication
-            // You'll need to add your APNs key and team ID to environment variables
+            // Check if APNs key is available
+            const keyPath = process.env.APNS_KEY_PATH;
+            const keyId = process.env.APNS_KEY_ID;
+            const teamId = process.env.APNS_TEAM_ID;
+
+            if (!keyPath || !keyId || !teamId) {
+                console.log('⚠️ APNs configuration missing. Set APNS_KEY_PATH, APNS_KEY_ID, and APNS_TEAM_ID environment variables.');
+                return;
+            }
+
             const options = {
                 token: {
-                    key: process.env.APNS_KEY_PATH || './apns-key.p8',
-                    keyId: process.env.APNS_KEY_ID || 'your-key-id',
-                    teamId: process.env.APNS_TEAM_ID || 'your-team-id',
+                    key: keyPath,
+                    keyId: keyId,
+                    teamId: teamId,
                 },
                 production: process.env.NODE_ENV === 'production',
             };
 
             this.apnProvider = new apn.Provider(options);
-            console.log('✅ APNs provider initialized');
+            console.log('✅ APNs provider initialized with key-based authentication');
         } catch (error) {
             console.log('❌ Failed to initialize APNs provider:', error);
             // Continue without APNs for now
