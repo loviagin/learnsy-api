@@ -19,6 +19,24 @@ export class ChatsService {
     ) {}
 
     async createChat(createChatDto: CreateChatDto, currentUserId: string): Promise<ChatResponseDto> {
+        // Verify that current user exists
+        const currentUser = await this.userRepository.findOne({
+            where: { id: currentUserId },
+        });
+        if (!currentUser) {
+            throw new NotFoundException('Current user not found');
+        }
+
+        // For direct chats, verify that the participant user exists
+        if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
+            const participantUser = await this.userRepository.findOne({
+                where: { id: createChatDto.participant_user_id },
+            });
+            if (!participantUser) {
+                throw new NotFoundException('Participant user not found');
+            }
+        }
+
         const chat = this.chatRepository.create({
             ...createChatDto,
             created_by_id: currentUserId,
