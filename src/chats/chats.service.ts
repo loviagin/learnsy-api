@@ -435,7 +435,7 @@ export class ChatsService {
             order: { created_at: 'DESC' },
         });
 
-        return {
+        const response = {
             id: chat.id,
             name: chat.name,
             avatar_url: chat.avatar_url,
@@ -450,6 +450,13 @@ export class ChatsService {
             participants: chat.participants?.map(p => this.formatParticipantResponse(p)),
             last_message: lastMessage ? this.formatMessageResponse(lastMessage) : undefined,
         };
+        
+        console.log(`[ChatService] Formatting chat response for chat ${chat.id}:`);
+        console.log(`[ChatService] created_at: ${chat.created_at} (type: ${typeof chat.created_at})`);
+        console.log(`[ChatService] updated_at: ${chat.updated_at} (type: ${typeof chat.updated_at})`);
+        console.log(`[ChatService] last_message_at: ${chat.last_message_at} (type: ${typeof chat.last_message_at})`);
+        
+        return response;
     }
 
     private formatParticipantResponse(participant: ChatParticipant): ChatParticipantResponseDto {
