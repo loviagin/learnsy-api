@@ -393,13 +393,6 @@ export class ChatsService {
                 name: participant.user.name,
                 username: participant.user.username,
                 avatar_url: participant.user.avatar_url,
-                roles: participant.user.roles || [],
-                owned_skills: [],
-                desired_skills: [],
-                created_at: participant.user.created_at?.toISOString(),
-                updated_at: participant.user.updated_at?.toISOString(),
-                subscribers_count: 0,
-                subscriptions_count: 0,
             } : undefined,
         };
     }
@@ -422,13 +415,6 @@ export class ChatsService {
                 name: message.user.name,
                 username: message.user.username,
                 avatar_url: message.user.avatar_url,
-                roles: message.user.roles || [],
-                owned_skills: [],
-                desired_skills: [],
-                created_at: message.user.created_at?.toISOString(),
-                updated_at: message.user.updated_at?.toISOString(),
-                subscribers_count: 0,
-                subscriptions_count: 0,
             } : undefined,
             reply_to: message.reply_to ? this.formatMessageResponse(message.reply_to) : undefined,
         };
