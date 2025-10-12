@@ -70,6 +70,10 @@ export class UsersService {
         return saved;
     }
 
+    async findByAuthUserId(authUserId: string): Promise<AppUser | null> {
+        return this.repo.findOne({ where: { auth_user_id: authUserId } });
+    }
+
     async getMeBySub(sub: string) {
         const user = await this.repo.findOne({ 
             where: { auth_user_id: sub },
