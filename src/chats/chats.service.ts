@@ -273,22 +273,33 @@ export class ChatsService {
             .execute();
 
         // Send notifications to other participants
+        console.log(`[ChatService] Looking for other participants in chat ${chatId}`);
         const otherParticipants = await this.participantRepository.find({
             where: { chat_id: chatId },
             relations: ['user']
+        });
+
+        console.log(`[ChatService] Found ${otherParticipants.length} total participants`);
+        otherParticipants.forEach(p => {
+            console.log(`[ChatService] Participant: ${p.user_id} (${p.user?.name || p.user?.username || 'Unknown'})`);
         });
 
         const recipientUserIds = otherParticipants
             .filter(p => p.user_id !== user.id)
             .map(p => p.user_id);
 
+        console.log(`[ChatService] Recipient user IDs: ${JSON.stringify(recipientUserIds)}`);
+
         if (recipientUserIds.length > 0) {
+            console.log(`[ChatService] Sending notifications to ${recipientUserIds.length} recipients`);
             await this.notificationsService.sendChatNotification(
                 chatId,
                 savedMessage.content,
                 user.name || user.username || 'Unknown User',
                 recipientUserIds
             );
+        } else {
+            console.log(`[ChatService] No other participants to notify`);
         }
 
         return this.formatMessageResponse(savedMessage);

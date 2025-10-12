@@ -25,7 +25,16 @@ export class NotificationsController {
         @Body() body: { token: string; platform?: string },
         @ReqUser() user: JwtUser
     ) {
+        console.log(`📱 [NotificationsController] Register token request from user: ${user.sub}`);
+        console.log(`📱 [NotificationsController] Token: ${body.token.substring(0, 20)}...`);
+        console.log(`📱 [NotificationsController] Platform: ${body.platform || 'ios'}`);
+        
         const userId = await this.getCurrentUserId(user.sub);
-        return this.notificationsService.registerDeviceToken(userId, body.token, body.platform || 'ios');
+        console.log(`📱 [NotificationsController] User ID: ${userId}`);
+        
+        const result = await this.notificationsService.registerDeviceToken(userId, body.token, body.platform || 'ios');
+        console.log(`📱 [NotificationsController] Token registration result: ${result.id}`);
+        
+        return result;
     }
 }
