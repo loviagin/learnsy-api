@@ -18,10 +18,10 @@ export class ChatsService {
         private userRepository: Repository<AppUser>,
     ) {}
 
-    async createChat(createChatDto: CreateChatDto, currentUserId: string): Promise<ChatResponseDto> {
-        // Verify that current user exists
+    async createChat(createChatDto: CreateChatDto, currentUserSub: string): Promise<ChatResponseDto> {
+        // Get current user by auth_user_id (sub)
         const currentUser = await this.userRepository.findOne({
-            where: { id: currentUserId },
+            where: { auth_user_id: currentUserSub },
         });
         if (!currentUser) {
             throw new NotFoundException('Current user not found');
@@ -39,7 +39,7 @@ export class ChatsService {
 
         const chat = this.chatRepository.create({
             ...createChatDto,
-            created_by_id: currentUserId,
+            created_by_id: currentUser.id,
         });
 
         const savedChat = await this.chatRepository.save(chat);
@@ -47,22 +47,29 @@ export class ChatsService {
         // Add creator as participant directly (bypass admin check for creator)
         const creatorParticipant = this.participantRepository.create({
             chat_id: savedChat.id,
-            user_id: currentUserId,
+            user_id: currentUser.id,
             role: 'admin',
         });
         await this.participantRepository.save(creatorParticipant);
 
         // For direct chats, add the other participant
         if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
-            await this.addParticipant(savedChat.id, { user_id: createChatDto.participant_user_id, role: 'member' }, currentUserId);
+            await this.addParticipant(savedChat.id, { user_id: createChatDto.participant_user_id, role: 'member' }, currentUser.id);
         }
 
         return this.formatChatResponse(savedChat);
     }
 
-    async getUserChats(userId: string): Promise<ChatResponseDto[]> {
+    async getUserChats(userSub: string): Promise<ChatResponseDto[]> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participants = await this.participantRepository.find({
-            where: { user_id: userId },
+            where: { user_id: user.id },
             relations: ['chat', 'chat.participants', 'chat.participants.user'],
             order: { chat: { last_message_at: 'DESC' } },
         });
@@ -71,9 +78,16 @@ export class ChatsService {
         return Promise.all(chats.map(chat => this.formatChatResponse(chat)));
     }
 
-    async getChatById(chatId: string, userId: string): Promise<ChatResponseDto> {
+    async getChatById(chatId: string, userSub: string): Promise<ChatResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: userId },
+            where: { chat_id: chatId, user_id: user.id },
             relations: ['chat', 'chat.participants', 'chat.participants.user'],
         });
 
@@ -84,9 +98,16 @@ export class ChatsService {
         return this.formatChatResponse(participant.chat);
     }
 
-    async updateChat(chatId: string, updateChatDto: UpdateChatDto, userId: string): Promise<ChatResponseDto> {
+    async updateChat(chatId: string, updateChatDto: UpdateChatDto, userSub: string): Promise<ChatResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: userId },
+            where: { chat_id: chatId, user_id: user.id },
             relations: ['chat'],
         });
 
@@ -107,9 +128,16 @@ export class ChatsService {
         return this.formatChatResponse(updatedChat);
     }
 
-    async addParticipant(chatId: string, addParticipantDto: AddParticipantDto, currentUserId: string): Promise<ChatParticipantResponseDto> {
+    async addParticipant(chatId: string, addParticipantDto: AddParticipantDto, currentUserSub: string): Promise<ChatParticipantResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: currentUserSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const currentParticipant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: currentUserId },
+            where: { chat_id: chatId, user_id: user.id },
         });
 
         if (!currentParticipant || currentParticipant.role !== 'admin') {
@@ -134,9 +162,16 @@ export class ChatsService {
         return this.formatParticipantResponse(savedParticipant);
     }
 
-    async removeParticipant(chatId: string, userId: string, currentUserId: string): Promise<void> {
+    async removeParticipant(chatId: string, userId: string, currentUserSub: string): Promise<void> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: currentUserSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const currentParticipant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: currentUserId },
+            where: { chat_id: chatId, user_id: user.id },
         });
 
         if (!currentParticipant || currentParticipant.role !== 'admin') {
@@ -146,9 +181,16 @@ export class ChatsService {
         await this.participantRepository.delete({ chat_id: chatId, user_id: userId });
     }
 
-    async createMessage(chatId: string, createMessageDto: CreateMessageDto, userId: string): Promise<ChatMessageResponseDto> {
+    async createMessage(chatId: string, createMessageDto: CreateMessageDto, userSub: string): Promise<ChatMessageResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: userId },
+            where: { chat_id: chatId, user_id: user.id },
         });
 
         if (!participant) {
@@ -157,7 +199,7 @@ export class ChatsService {
 
         const message = this.messageRepository.create({
             chat_id: chatId,
-            user_id: userId,
+            user_id: user.id,
             ...createMessageDto,
         });
 
@@ -167,7 +209,7 @@ export class ChatsService {
         await this.chatRepository.update(chatId, {
             last_message_at: savedMessage.created_at,
             last_message_text: savedMessage.content,
-            last_message_user_id: userId,
+            last_message_user_id: user.id,
             updated_at: new Date(),
         });
 
@@ -176,15 +218,22 @@ export class ChatsService {
             .createQueryBuilder()
             .update(ChatParticipant)
             .set({ unread_count: () => 'unread_count + 1' })
-            .where('chat_id = :chatId AND user_id != :userId', { chatId, userId })
+            .where('chat_id = :chatId AND user_id != :userId', { chatId, userId: user.id })
             .execute();
 
         return this.formatMessageResponse(savedMessage);
     }
 
-    async getChatMessages(chatId: string, userId: string, limit: number = 50, offset: number = 0): Promise<ChatMessageResponseDto[]> {
+    async getChatMessages(chatId: string, userSub: string, limit: number = 50, offset: number = 0): Promise<ChatMessageResponseDto[]> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: userId },
+            where: { chat_id: chatId, user_id: user.id },
         });
 
         if (!participant) {
@@ -202,9 +251,16 @@ export class ChatsService {
         return messages.map(message => this.formatMessageResponse(message));
     }
 
-    async updateMessage(messageId: string, updateMessageDto: UpdateMessageDto, userId: string): Promise<ChatMessageResponseDto> {
+    async updateMessage(messageId: string, updateMessageDto: UpdateMessageDto, userSub: string): Promise<ChatMessageResponseDto> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const message = await this.messageRepository.findOne({
-            where: { id: messageId, user_id: userId },
+            where: { id: messageId, user_id: user.id },
             relations: ['user', 'reply_to', 'reply_to.user'],
         });
 
@@ -230,9 +286,16 @@ export class ChatsService {
         return this.formatMessageResponse(updatedMessage);
     }
 
-    async deleteMessage(messageId: string, userId: string): Promise<void> {
+    async deleteMessage(messageId: string, userSub: string): Promise<void> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const message = await this.messageRepository.findOne({
-            where: { id: messageId, user_id: userId },
+            where: { id: messageId, user_id: user.id },
         });
 
         if (!message) {
@@ -246,9 +309,16 @@ export class ChatsService {
         });
     }
 
-    async markAsRead(chatId: string, userId: string, markAsReadDto: MarkAsReadDto): Promise<void> {
+    async markAsRead(chatId: string, userSub: string, markAsReadDto: MarkAsReadDto): Promise<void> {
+        const user = await this.userRepository.findOne({
+            where: { auth_user_id: userSub },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const participant = await this.participantRepository.findOne({
-            where: { chat_id: chatId, user_id: userId },
+            where: { chat_id: chatId, user_id: user.id },
         });
 
         if (!participant) {
@@ -258,7 +328,7 @@ export class ChatsService {
         const lastReadAt = markAsReadDto.last_read_at ? new Date(markAsReadDto.last_read_at) : new Date();
 
         await this.participantRepository.update(
-            { chat_id: chatId, user_id: userId },
+            { chat_id: chatId, user_id: user.id },
             {
                 last_read_at: lastReadAt,
                 unread_count: 0,
