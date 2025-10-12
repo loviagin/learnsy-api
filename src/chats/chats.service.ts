@@ -127,10 +127,19 @@ export class ChatsService {
             });
         }
         
-        if (!participant || participant.role !== 'admin') {
-            console.log(`[ChatService] User ${userId} is not admin of chat ${chatId}`);
-            throw new ForbiddenException('Only admins can delete chats');
+        if (!participant) {
+            console.log(`[ChatService] User ${userId} is not a participant of chat ${chatId}`);
+            throw new ForbiddenException('You are not a participant of this chat');
         }
+
+        // For direct chats, any participant can delete the chat
+        // For group chats, only admins can delete
+        if (chat.type === 'group' && participant.role !== 'admin') {
+            console.log(`[ChatService] User ${userId} is not admin of group chat ${chatId}`);
+            throw new ForbiddenException('Only admins can delete group chats');
+        }
+
+        console.log(`[ChatService] User ${userId} can delete chat ${chatId} (type: ${chat.type}, role: ${participant.role})`);
 
         // Delete all messages first
         await this.messageRepository.delete({ chat_id: chatId });
