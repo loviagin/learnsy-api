@@ -26,8 +26,18 @@ export class ChatsService {
 
         const savedChat = await this.chatRepository.save(chat);
 
-        // Add creator as participant
-        await this.addParticipant(savedChat.id, { user_id: currentUserId, role: 'admin' }, currentUserId);
+        // Add creator as participant directly (bypass admin check for creator)
+        const creatorParticipant = this.participantRepository.create({
+            chat_id: savedChat.id,
+            user_id: currentUserId,
+            role: 'admin',
+        });
+        await this.participantRepository.save(creatorParticipant);
+
+        // For direct chats, add the other participant
+        if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
+            await this.addParticipant(savedChat.id, { user_id: createChatDto.participant_user_id, role: 'member' }, currentUserId);
+        }
 
         return this.formatChatResponse(savedChat);
     }

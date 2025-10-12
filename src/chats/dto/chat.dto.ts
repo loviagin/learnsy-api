@@ -15,6 +15,10 @@ export class CreateChatDto {
     @IsOptional()
     @IsUUID()
     created_by_id?: string;
+
+    @IsOptional()
+    @IsUUID()
+    participant_user_id?: string;
 }
 
 export class UpdateChatDto {
