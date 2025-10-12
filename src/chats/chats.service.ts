@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Chat, ChatParticipant, ChatMessage } from './chat.entity';
 import { AppUser } from '../users/app-user.entity';
 import { CreateChatDto, UpdateChatDto, AddParticipantDto, CreateMessageDto, UpdateMessageDto, MarkAsReadDto, ChatResponseDto, ChatParticipantResponseDto, ChatMessageResponseDto } from './dto/chat.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ChatsService {
@@ -16,6 +17,7 @@ export class ChatsService {
         private messageRepository: Repository<ChatMessage>,
         @InjectRepository(AppUser)
         private userRepository: Repository<AppUser>,
+        private notificationsService: NotificationsService,
     ) {}
 
     async createChat(createChatDto: CreateChatDto, currentUserId: string): Promise<ChatResponseDto> {
@@ -269,6 +271,25 @@ export class ChatsService {
             .set({ unread_count: () => 'unread_count + 1' })
             .where('chat_id = :chatId AND user_id != :userId', { chatId, userId: user.id })
             .execute();
+
+        // Send notifications to other participants
+        const otherParticipants = await this.participantRepository.find({
+            where: { chat_id: chatId },
+            relations: ['user']
+        });
+
+        const recipientUserIds = otherParticipants
+            .filter(p => p.user_id !== user.id)
+            .map(p => p.user_id);
+
+        if (recipientUserIds.length > 0) {
+            await this.notificationsService.sendChatNotification(
+                chatId,
+                savedMessage.content,
+                user.name || user.username || 'Unknown User',
+                recipientUserIds
+            );
+        }
 
         return this.formatMessageResponse(savedMessage);
     }

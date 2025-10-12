@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
 import { ChatsModule } from './chats/chats.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ChatsModule } from './chats/chats.module';
     UsersModule,
     AdminModule,
     ChatsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
