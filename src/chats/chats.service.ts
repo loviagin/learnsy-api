@@ -83,10 +83,13 @@ export class ChatsService {
     }
 
     async deleteChat(chatId: string, userId: string): Promise<void> {
+        console.log(`[ChatService] Delete chat request: chatId=${chatId}, userId=${userId}`);
+        
         const user = await this.userRepository.findOne({
             where: { id: userId },
         });
         if (!user) {
+            console.log(`[ChatService] User not found: ${userId}`);
             throw new NotFoundException('User not found');
         }
 
@@ -95,12 +98,18 @@ export class ChatsService {
             relations: ['participants'],
         });
         if (!chat) {
+            console.log(`[ChatService] Chat not found: ${chatId}`);
             throw new NotFoundException('Chat not found');
         }
 
+        console.log(`[ChatService] Chat participants:`, chat.participants?.map(p => `${p.user_id}:${p.role}`));
+
         // Check if user is admin of the chat
         const participant = chat.participants?.find(p => p.user_id === userId);
+        console.log(`[ChatService] Found participant:`, participant ? `${participant.user_id}:${participant.role}` : 'null');
+        
         if (!participant || participant.role !== 'admin') {
+            console.log(`[ChatService] User ${userId} is not admin of chat ${chatId}`);
             throw new ForbiddenException('Only admins can delete chats');
         }
 
