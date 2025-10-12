@@ -71,6 +71,8 @@ export class ChatParticipantResponseDto {
         username?: string;
         avatar_url?: string;
         roles?: string[];
+        owned_skills?: any[];
+        desired_skills?: any[];
     };
 }
 
@@ -92,6 +94,8 @@ export class ChatMessageResponseDto {
         username?: string;
         avatar_url?: string;
         roles?: string[];
+        owned_skills?: any[];
+        desired_skills?: any[];
     };
     reply_to?: ChatMessageResponseDto;
 }
