@@ -380,6 +380,7 @@ export class ChatsService {
     }
 
     private formatParticipantResponse(participant: ChatParticipant): ChatParticipantResponseDto {
+        console.log(`[ChatService] Formatting participant ${participant.user?.id}: avatar_url=${participant.user?.avatar_url}`);
         return {
             id: participant.id,
             chat_id: participant.chat_id,
