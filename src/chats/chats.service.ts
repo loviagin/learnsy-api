@@ -30,10 +30,10 @@ export class ChatsService {
         }
 
         // For direct chats, verify that the participant user exists
-        if (createChatDto.type === 'direct' && createChatDto.participant_auth_user_id) {
-            console.log(`[ChatService] Looking for participant with auth_user_id: ${createChatDto.participant_auth_user_id}`);
+        if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
+            console.log(`[ChatService] Looking for participant with id: ${createChatDto.participant_user_id}`);
             const participantUser = await this.userRepository.findOne({
-                where: { auth_user_id: createChatDto.participant_auth_user_id },
+                where: { id: createChatDto.participant_user_id },
             });
             console.log(`[ChatService] Participant user found:`, participantUser ? `${participantUser.id} (${participantUser.name})` : 'null');
             if (!participantUser) {
@@ -57,13 +57,8 @@ export class ChatsService {
         await this.participantRepository.save(creatorParticipant);
 
         // For direct chats, add the other participant
-        if (createChatDto.type === 'direct' && createChatDto.participant_auth_user_id) {
-            const participantUser = await this.userRepository.findOne({
-                where: { auth_user_id: createChatDto.participant_auth_user_id },
-            });
-            if (participantUser) {
-                await this.addParticipant(savedChat.id, { user_id: participantUser.id, role: 'member' }, currentUserSub);
-            }
+        if (createChatDto.type === 'direct' && createChatDto.participant_user_id) {
+            await this.addParticipant(savedChat.id, { user_id: createChatDto.participant_user_id, role: 'member' }, currentUserSub);
         }
 
         return this.formatChatResponse(savedChat);
