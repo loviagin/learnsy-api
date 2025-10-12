@@ -105,10 +105,21 @@ export class ChatsService {
         }
 
         console.log(`[ChatService] Chat participants:`, chat.participants?.map(p => `${p.user_id}:${p.role}`));
+        console.log(`[ChatService] Looking for user ${userId} in participants`);
 
         // Check if user is admin of the chat
         const participant = chat.participants?.find(p => p.user_id === userId);
         console.log(`[ChatService] Found participant:`, participant ? `${participant.user_id}:${participant.role}` : 'null');
+        
+        if (participant) {
+            console.log(`[ChatService] Participant details:`, {
+                id: participant.id,
+                chat_id: participant.chat_id,
+                user_id: participant.user_id,
+                role: participant.role,
+                joined_at: participant.joined_at
+            });
+        }
         
         if (!participant || participant.role !== 'admin') {
             console.log(`[ChatService] User ${userId} is not admin of chat ${chatId}`);
