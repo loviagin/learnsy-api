@@ -45,6 +45,12 @@ export class ChatsController {
         return this.chatsService.updateChat(id, updateChatDto, userId);
     }
 
+    @Delete(':id')
+    async deleteChat(@Param('id') id: string, @ReqUser() user: JwtUser) {
+        const userId = await this.getCurrentUserId(user.sub);
+        return this.chatsService.deleteChat(id, userId);
+    }
+
     @Post(':id/participants')
     async addParticipant(@Param('id') id: string, @Body() addParticipantDto: AddParticipantDto, @ReqUser() user: JwtUser) {
         const userId = await this.getCurrentUserId(user.sub);

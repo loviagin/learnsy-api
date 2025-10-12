@@ -82,6 +82,38 @@ export class ChatsService {
         return Promise.all(chats.map(chat => this.formatChatResponse(chat)));
     }
 
+    async deleteChat(chatId: string, userId: string): Promise<void> {
+        const user = await this.userRepository.findOne({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const chat = await this.chatRepository.findOne({
+            where: { id: chatId },
+            relations: ['participants'],
+        });
+        if (!chat) {
+            throw new NotFoundException('Chat not found');
+        }
+
+        // Check if user is admin of the chat
+        const participant = chat.participants?.find(p => p.user_id === userId);
+        if (!participant || participant.role !== 'admin') {
+            throw new ForbiddenException('Only admins can delete chats');
+        }
+
+        // Delete all messages first
+        await this.messageRepository.delete({ chat_id: chatId });
+        
+        // Delete all participants
+        await this.participantRepository.delete({ chat_id: chatId });
+        
+        // Delete the chat
+        await this.chatRepository.delete({ id: chatId });
+    }
+
     async getChatById(chatId: string, userId: string): Promise<ChatResponseDto> {
         const user = await this.userRepository.findOne({
             where: { id: userId },
