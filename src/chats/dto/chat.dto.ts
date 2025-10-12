@@ -19,6 +19,10 @@ export class CreateChatDto {
     @IsOptional()
     @IsUUID()
     participant_user_id?: string;
+
+    @IsOptional()
+    @IsString()
+    participant_auth_user_id?: string;
 }
 
 export class UpdateChatDto {
