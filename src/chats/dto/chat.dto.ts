@@ -73,6 +73,8 @@ export class ChatParticipantResponseDto {
         roles?: string[];
         owned_skills?: any[];
         desired_skills?: any[];
+        created_at?: string;
+        updated_at?: string;
     };
 }
 
@@ -96,6 +98,8 @@ export class ChatMessageResponseDto {
         roles?: string[];
         owned_skills?: any[];
         desired_skills?: any[];
+        created_at?: string;
+        updated_at?: string;
     };
     reply_to?: ChatMessageResponseDto;
 }
