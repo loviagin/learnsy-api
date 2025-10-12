@@ -62,7 +62,7 @@ export class ChatsService {
                 where: { auth_user_id: createChatDto.participant_auth_user_id },
             });
             if (participantUser) {
-                await this.addParticipant(savedChat.id, { user_id: participantUser.id, role: 'member' }, currentUser.id);
+                await this.addParticipant(savedChat.id, { user_id: participantUser.id, role: 'member' }, currentUserSub);
             }
         }
 
