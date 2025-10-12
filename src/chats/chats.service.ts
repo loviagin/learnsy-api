@@ -191,6 +191,9 @@ export class ChatsService {
     }
 
     async createMessage(chatId: string, createMessageDto: CreateMessageDto, userSub: string): Promise<ChatMessageResponseDto> {
+        console.log(`[ChatService] Creating message in chat ${chatId} by user ${userSub}`);
+        console.log(`[ChatService] Message content: ${createMessageDto.content}`);
+        
         const user = await this.userRepository.findOne({
             where: { auth_user_id: userSub },
         });
@@ -213,6 +216,7 @@ export class ChatsService {
         });
 
         const savedMessage = await this.messageRepository.save(message);
+        console.log(`[ChatService] Message saved with ID: ${savedMessage.id}`);
 
         // Update chat's last message info
         await this.chatRepository.update(chatId, {
@@ -234,6 +238,8 @@ export class ChatsService {
     }
 
     async getChatMessages(chatId: string, userSub: string, limit: number = 50, offset: number = 0): Promise<ChatMessageResponseDto[]> {
+        console.log(`[ChatService] Getting messages for chat ${chatId} by user ${userSub}`);
+        
         const user = await this.userRepository.findOne({
             where: { auth_user_id: userSub },
         });
@@ -257,6 +263,7 @@ export class ChatsService {
             skip: offset,
         });
 
+        console.log(`[ChatService] Found ${messages.length} messages for chat ${chatId}`);
         return messages.map(message => this.formatMessageResponse(message));
     }
 
@@ -346,6 +353,14 @@ export class ChatsService {
     }
 
     private async formatChatResponse(chat: Chat): Promise<ChatResponseDto> {
+        // If participants are not loaded with user data, load them
+        if (!chat.participants || chat.participants.some(p => !p.user)) {
+            chat.participants = await this.participantRepository.find({
+                where: { chat_id: chat.id },
+                relations: ['user'],
+            });
+        }
+
         const lastMessage = await this.messageRepository.findOne({
             where: { chat_id: chat.id },
             relations: ['user'],
