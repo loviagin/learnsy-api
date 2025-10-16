@@ -472,6 +472,17 @@ export class ChatsService {
                 unread_count: 0,
             }
         );
+
+        // Broadcast read receipts to chat room (active listeners)
+        await this.chatsGateway.notifyMessagesRead(chatId, user.id, lastReadAt);
+
+        // Also notify all other participants via their personal rooms (passive listeners)
+        const otherParticipants = await this.participantRepository.find({ where: { chat_id: chatId } });
+        for (const p of otherParticipants) {
+            if (p.user_id !== user.id) {
+                await this.chatsGateway.notifyUserMessagesRead(p.user_id, chatId, user.id, lastReadAt);
+            }
+        }
     }
 
     private async formatChatResponse(chat: Chat): Promise<ChatResponseDto> {

@@ -158,6 +158,36 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(`user:${userId}`).emit('chat_deleted', { chatId });
   }
 
+  // Method to notify chat participants that a user has read messages
+  async notifyMessagesRead(chatId: string, readerUserId: string, lastReadAt: Date) {
+    try {
+      const iso = lastReadAt.toISOString();
+      console.log(`📡 Broadcasting messages_read to chat ${chatId} by ${readerUserId} up to ${iso}`);
+      this.server.to(`chat:${chatId}`).emit('messages_read', {
+        chatId,
+        readerId: readerUserId,
+        lastReadAt: iso,
+      });
+    } catch (err) {
+      console.log(`❌ Failed to emit messages_read for chat ${chatId}:`, err);
+    }
+  }
+
+  // Method to notify a specific user (personal room) about read receipts
+  async notifyUserMessagesRead(userId: string, chatId: string, readerUserId: string, lastReadAt: Date) {
+    try {
+      const iso = lastReadAt.toISOString();
+      console.log(`📡 Broadcasting messages_read to user ${userId} for chat ${chatId} by ${readerUserId} up to ${iso}`);
+      this.server.to(`user:${userId}`).emit('messages_read', {
+        chatId,
+        readerId: readerUserId,
+        lastReadAt: iso,
+      });
+    } catch (err) {
+      console.log(`❌ Failed to emit messages_read to user ${userId}:`, err);
+    }
+  }
+
   private async getUserIdFromToken(token: string): Promise<string | null> {
     try {
       // Use the same validation method as JwtGuard
