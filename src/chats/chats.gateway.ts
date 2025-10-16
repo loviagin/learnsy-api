@@ -8,8 +8,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, UseGuards } from '@nestjs/common';
-import { JwtGuard } from '../auth/jwt.guard';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 
 interface AuthenticatedSocket extends Socket {
@@ -33,14 +32,24 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: AuthenticatedSocket) {
     console.log(`🔌 WebSocket client connected: ${client.id}`);
     
-    // Extract token from handshake auth
-    const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+    // Extract token from handshake auth, headers, or query parameters
+    let token = 
+      client.handshake.auth?.token || 
+      client.handshake.headers?.authorization?.replace('Bearer ', '') ||
+      client.handshake.query?.token;
     
-    if (!token) {
-      console.log(`❌ No token provided for socket ${client.id}`);
+    // Handle case where query parameter is an array
+    if (Array.isArray(token)) {
+      token = token[0];
+    }
+    
+    if (!token || typeof token !== 'string') {
+      console.log(`❌ No valid token provided for socket ${client.id}`);
       client.disconnect();
       return;
     }
+    
+    console.log(`🔑 Token received from socket ${client.id}: ${token.substring(0, 20)}...`);
 
     try {
       // Verify token and get user
@@ -151,23 +160,39 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private async getUserIdFromToken(token: string): Promise<string | null> {
     try {
-      // In a real implementation, you'd verify the JWT token here
-      // For now, we'll use a simplified approach
-      // You should implement proper JWT verification
+      // Use the same validation method as JwtGuard
+      const USERINFO_URL = 'https://auth.lovig.in/api/oidc/me';
       
-      // This is a placeholder - implement proper JWT verification
-      // For now, we'll extract user ID from a mock token
-      // In production, use JWT verification
+      const response = await fetch(USERINFO_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
-      // Mock implementation - replace with real JWT verification
-      if (token.length > 10) {
-        // This is just for testing - implement proper JWT verification
-        return 'mock-user-id';
+      if (!response.ok) {
+        console.log(`❌ Token validation failed: ${response.status}`);
+        return null;
       }
       
-      return null;
+      const userInfo = await response.json() as { sub: string; email?: string; name?: string };
+      
+      if (!userInfo.sub) {
+        console.log('❌ Invalid token: missing sub claim');
+        return null;
+      }
+      
+      // Find user by auth_user_id (OIDC sub)
+      const user = await this.usersService.findByAuthUserId(userInfo.sub);
+      
+      if (!user) {
+        console.log(`❌ User not found for auth_user_id: ${userInfo.sub}`);
+        return null;
+      }
+      
+      console.log(`✅ Authenticated user: ${user.id} (${user.name || user.username})`);
+      return user.id;
     } catch (error) {
-      console.log('Error verifying token:', error);
+      console.log('❌ Error verifying token:', error);
       return null;
     }
   }
